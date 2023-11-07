@@ -1,11 +1,48 @@
 import * as SQLite from 'expo-sqlite';
 
+type Casts = {
+  [key: string]: 'number' | 'boolean' | 'string' | 'json';
+};
+
+type Clauses = {
+  select: string;
+  where: Array<{ column: string; operator: string; value?: any }>;
+  orderBy: { column: string; direction: string } | null;
+  limit: number | null;
+  withRelations: string[];
+};
+
+type ModelAttributes = {
+  [key: string]: any;
+};
+
+type SQLResult = {
+  insertId?: number;
+  rowsAffected: number;
+  rows: {
+    _array: ModelAttributes[];
+    length: number;
+    item(index: number): ModelAttributes;
+  };
+};
+
+interface StaticModel {
+  new(attributes?: ModelAttributes): Model;
+  db: any;
+  tableName: string;
+  casts: Casts;
+  executeSql(sql: string, params?: any[]): Promise<SQLResult>;
+}
+
+
 export class Model {
   static db = SQLite.openDatabase('app.db');
   static tableName = '';
-  static casts = {};
+  static casts: Casts = {};
 
-  constructor(attributes = {}) {
+  clauses: Clauses;
+
+  constructor(attributes: ModelAttributes = {}) {
     Object.assign(this, attributes);
     this.clauses = {
       select: '*',
@@ -17,12 +54,12 @@ export class Model {
   }
 
   // Instance methods for query building
-  select(fields = '*') {
+  select(fields: string | string[] = '*'): this {
     this.clauses.select = Array.isArray(fields) ? fields.join(', ') : fields;
     return this;
   }
 
-  where(column, operator, value) {
+  where(column: string, operator: string, value?: any): this {
     if (value === undefined) {
       value = operator;
       operator = '=';
@@ -31,39 +68,39 @@ export class Model {
     return this;
   }
 
-  orderBy(column, direction = 'ASC') {
+  orderBy(column: string, direction: 'ASC' | 'DESC' = 'ASC'): this {
     this.clauses.orderBy = { column, direction };
     return this;
   }
 
-  limit(number) {
+  limit(number: number): this {
     this.clauses.limit = number;
     return this;
   }
 
-  with(relation) {
+  with(relation: string): this {
     this.clauses.withRelations.push(relation);
     return this;
   }
 
   // Static methods that proxy to instance methods
-  static select(fields = '*') {
+  static select<T extends Model>(this: new () => T, fields: string | string[] = '*'): T {
     return new this().select(fields);
   }
 
-  static where(column, operator, value) {
+  static where<T extends Model>(this: new () => T, column: string, operator: string, value?: any): T {
     return new this().where(column, operator, value);
   }
 
-  static orderBy(column, direction = 'ASC') {
+  static orderBy<T extends Model>(this: new () => T, column: string, direction: 'ASC' | 'DESC' = 'ASC'): T {
     return new this().orderBy(column, direction);
   }
 
-  static limit(number) {
+  static limit<T extends Model>(this: new () => T, number: number): T {
     return new this().limit(number);
   }
 
-  static with(relation) {
+  static with<T extends Model>(this: new () => T, relation: string): T {
     const instance = new this().with(relation);
     console.log(instance.constructor.name, 'with', relation); // Check what the instance looks like
     return instance;
@@ -71,7 +108,9 @@ export class Model {
 
   // Cast an attribute to the specified type
   castAttribute(key, value) {
+    // @ts-ignore
     if (this.constructor.casts[key]) {
+      // @ts-ignore
       switch (this.constructor.casts[key]) {
         case 'number':
           return Number(value);
@@ -94,7 +133,9 @@ export class Model {
   }
 
   prepareAttributeForStorage(key, value) {
+    // @ts-ignore
     if (this.constructor.casts[key]) {
+      // @ts-ignore
       switch (this.constructor.casts[key]) {
         case 'json':
           return JSON.stringify(value);
@@ -124,13 +165,16 @@ export class Model {
       return this.prepareAttributeForStorage(fields[index], value);
     });
 
+    // @ts-ignore
     if (this.id) {
       // Update
       fields.push('updatedAt');
       valuesForStorage.push(now);
 
       const setClause = fields.map(field => `${field} = ?`).join(', ');
+      // @ts-ignore
       sql = `UPDATE ${this.constructor.tableName} SET ${setClause} WHERE id = ?`;
+      // @ts-ignore
       valuesForStorage.push(this.id);
     } else {
       // Insert
@@ -138,29 +182,37 @@ export class Model {
       valuesForStorage.push(now, now);
 
       const placeholders = fields.map(() => '?').join(', ');
+      // @ts-ignore
       sql = `INSERT INTO ${this.constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
     }
 
+    // @ts-ignore
     const result = await this.constructor.executeSql(sql, valuesForStorage);
+    // @ts-ignore
     if (!this.id && result.insertId) {
+      // @ts-ignore
       this.id = result.insertId;
     }
     return result;
   }
 
   async delete() {
+    // @ts-ignore
     if (!this.id) {
       throw new Error('Cannot delete a model without an id.');
     }
+    // @ts-ignore
     const sql = `DELETE FROM ${this.constructor.tableName} WHERE id = ?`;
+    // @ts-ignore
     return await this.constructor.executeSql(sql, [this.id]);
   }
 
-  static async executeSql(sql, params = []) {
+  static async executeSql(sql: string, params: any[] = []): Promise<SQLResult> {
     return new Promise((resolve, reject) => {
       this.db.transaction(tx => {
         tx.executeSql(sql, params, (_, result) => {
           resolve(result);
+          // @ts-ignore
         }, (transaction, error) => {
           reject(error);
         });
@@ -169,6 +221,7 @@ export class Model {
   }
 
   async get() {
+    // @ts-ignore
     let query = `SELECT ${this.clauses.select} FROM ${this.constructor.tableName}`;
     const params = [];
   
@@ -192,10 +245,12 @@ export class Model {
     }
   
     // Execute the SQL query
+    // @ts-ignore
     const result = await this.constructor.executeSql(query, params);
   
     // Map the result rows to clean instances of the model
     const instances = result.rows._array.map(row => {
+      // @ts-ignore
       const instance = new this.constructor(row);
       // return instance.toCleanObject(); // Use the new method here
       return this.cleanObject(instance); // Use the new method here
@@ -232,6 +287,11 @@ export class Model {
     return results[0] || null;
   }
 
+  async update(attributes: Partial<ModelAttributes>): Promise<SQLResult> {
+    Object.assign(this, attributes);
+    return this.save();
+  }
+
   static async find(id) {
     return await new this().where('id', '=', id).first();
   }
@@ -266,15 +326,15 @@ export class Model {
   }
 
   // Relationship methods
-  hasOne(relatedModel, foreignKey, localKey = 'id') {
+  hasOne<T extends Model>(relatedModel: T, foreignKey: string, localKey: string = 'id'): Promise<T | null> {
     return relatedModel.where(foreignKey, '=', this[localKey]).first();
   }
 
-  hasMany(relatedModel, foreignKey, localKey = 'id') {
+  hasMany<T extends Model>(relatedModel: T, foreignKey: string, localKey: string = 'id'): Promise<T | null> {
     return relatedModel.where(foreignKey, '=', this[localKey]).get();
   }
 
-  belongsTo(relatedModel, foreignKey, otherKey = 'id') {
+  belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey: string = 'id'): Promise<T | null> {
     return relatedModel.where(otherKey, '=', this[foreignKey]).first();
   }
 }

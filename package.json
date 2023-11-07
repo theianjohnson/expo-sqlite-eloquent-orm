@@ -2,11 +2,14 @@
   "name": "expo-sqlite-eloquent-orm",
   "version": "1.0.0",
   "description": "An Expo SQLite ORM",
-  "main": "index.js",
+  "main": "dist/bundle.min.js",
+  "types": "dist/index.d.ts",
   "directories": {
     "test": "tests"
   },
   "scripts": {
+    "build": "tsc && esbuild src/index.ts --bundle --minify --outfile=dist/bundle.min.js --external:*",
+    "bundle:types": "dts-bundle-generator -o dist/bundle.d.ts src/index.ts",
     "test": "jest"
   },
   "repository": {
@@ -25,5 +28,18 @@
   "bugs": {
     "url": "https://github.com/theianjohnson/expo-sqlite-eloquent-orm/issues"
   },
-  "homepage": "https://github.com/theianjohnson/expo-sqlite-eloquent-orm#readme"
+  "homepage": "https://github.com/theianjohnson/expo-sqlite-eloquent-orm#readme",
+  "devDependencies": {
+    "dts-bundle-generator": "^8.1.2",
+    "esbuild": "^0.19.5",
+    "terser": "^5.24.0",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "expo-sqlite": "^11.6.0"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0",
+    "react-native": "^0.72.6"
+  }
 }
