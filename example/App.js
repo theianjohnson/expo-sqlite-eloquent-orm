@@ -16,7 +16,7 @@ class Person extends Model {
   static tableName = 'people';
 
   group() {
-    return this.hasOne(Group, 'group_id');
+    return this.belongsTo(Group, 'group_id');
   }
 }
 
@@ -35,7 +35,7 @@ const migrations = {
       id INTEGER PRIMARY KEY NOT NULL,
       createdAt DATETIME NOT NULL,
       updatedAt DATETIME NOT NULL,
-      group_id INTEGER,
+      group_id INTEGER NOT NULL,
       name TEXT
     );
   `,
@@ -49,13 +49,14 @@ const groupSeedData = [
 ];
 
 const peopleSeedData = [
-  { name: 'Alice', group_id: 1 },
+  { name: 'Nora', group_id: 1 },
   { name: 'Bob', group_id: 2 },
   { name: 'Charlie', group_id: 1 },
 ];
 
 export default function App() {
 
+  const [groups, setGroups] = useState([]);
   const [people, setPeople] = useState([]);
 
   // Run migrations and seed data
@@ -65,18 +66,31 @@ export default function App() {
       await Group.seed(groupSeedData);
       await Person.seed(peopleSeedData);
 
-      const people = await Person.get();
-      // setPeople(people);
-      console.log(people);
+      const groups = await Group.with('people').get();
+      setGroups(groups);
+      console.log('App.js groups', groups);
+
+      const people = await Person.with('group').get();
+      setPeople(people);
+      console.log('People', people);
     })();
   }, [])
 
   return (
     <View style={styles.container}>
+
+      <Text>Groups:</Text>
+      {!!groups.length && groups.map(group => (
+        <Text key={group.id}>{group.name} - {!!group?.people?.length && group.people.map(person => person.name).join(', ')}</Text>
+      ))}
+
+      <View style={{ height: 10 }} />
+
       <Text>People:</Text>
       {!!people.length && people.map(person => (
-        <Text key={person.id}>{person.name} - {person.group.name}</Text>
+        <Text key={person.id}>{person.name} - {person?.group?.name}</Text>
       ))}
+
       <StatusBar style="auto" />
     </View>
   );

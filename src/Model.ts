@@ -156,10 +156,9 @@ export class Model {
 
   // Instance method to get a clean object for output
   cleanObject<T extends Model>(object: T): T {
-    const obj = { ...object };
     // @ts-ignore
-    delete obj.clauses;
-    return obj;
+    delete object.clauses;
+    return object;
   }
 
   // Instance methods
