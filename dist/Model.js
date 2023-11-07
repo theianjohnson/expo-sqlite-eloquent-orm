@@ -128,8 +128,10 @@ class Model {
     }
     // Instance method to get a clean object for output
     cleanObject(object) {
-        delete object.clauses;
-        return object;
+        const obj = Object.assign({}, object);
+        // @ts-ignore
+        delete obj.clauses;
+        return obj;
     }
     // Instance methods
     save() {
@@ -142,15 +144,13 @@ class Model {
             const valuesForStorage = values.map((value, index) => {
                 return this.prepareAttributeForStorage(fields[index], value);
             });
-            // @ts-ignore
+            const constructor = this.constructor;
             if (this.id) {
                 // Update
                 fields.push('updatedAt');
                 valuesForStorage.push(now);
                 const setClause = fields.map(field => `${field} = ?`).join(', ');
-                // @ts-ignore
-                sql = `UPDATE ${this.constructor.tableName} SET ${setClause} WHERE id = ?`;
-                // @ts-ignore
+                sql = `UPDATE ${constructor.tableName} SET ${setClause} WHERE id = ?`;
                 valuesForStorage.push(this.id);
             }
             else {
@@ -158,14 +158,10 @@ class Model {
                 fields.push('createdAt', 'updatedAt');
                 valuesForStorage.push(now, now);
                 const placeholders = fields.map(() => '?').join(', ');
-                // @ts-ignore
-                sql = `INSERT INTO ${this.constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+                sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
             }
-            // @ts-ignore
-            const result = yield this.constructor.executeSql(sql, valuesForStorage);
-            // @ts-ignore
+            const result = yield constructor.executeSql(sql, valuesForStorage);
             if (!this.id && result.insertId) {
-                // @ts-ignore
                 this.id = result.insertId;
             }
             return result;
@@ -173,14 +169,12 @@ class Model {
     }
     delete() {
         return __awaiter(this, void 0, void 0, function* () {
-            // @ts-ignore
+            const constructor = this.constructor;
             if (!this.id) {
                 throw new Error('Cannot delete a model without an id.');
             }
-            // @ts-ignore
-            const sql = `DELETE FROM ${this.constructor.tableName} WHERE id = ?`;
-            // @ts-ignore
-            return yield this.constructor.executeSql(sql, [this.id]);
+            const sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`;
+            return yield constructor.executeSql(sql, [this.id]);
         });
     }
     static executeSql(sql, params = []) {
@@ -199,8 +193,8 @@ class Model {
     }
     get() {
         return __awaiter(this, void 0, void 0, function* () {
-            // @ts-ignore
-            let query = `SELECT ${this.clauses.select} FROM ${this.constructor.tableName}`;
+            const constructor = this.constructor;
+            let query = `SELECT ${this.clauses.select} FROM ${constructor.tableName}`;
             const params = [];
             // Add WHERE clauses if any
             if (this.clauses.where.length) {
@@ -219,13 +213,10 @@ class Model {
                 query += ` LIMIT ${this.clauses.limit}`;
             }
             // Execute the SQL query
-            // @ts-ignore
-            const result = yield this.constructor.executeSql(query, params);
+            const result = yield constructor.executeSql(query, params);
             // Map the result rows to clean instances of the model
             const instances = result.rows._array.map(row => {
-                // @ts-ignore
-                const instance = new this.constructor(row);
-                // return instance.toCleanObject(); // Use the new method here
+                const instance = new constructor(row);
                 return this.cleanObject(instance); // Use the new method here
             });
             // Load relationships if any are specified

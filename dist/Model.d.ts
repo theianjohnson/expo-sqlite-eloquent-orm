@@ -33,6 +33,7 @@ export declare class Model {
     static tableName: string;
     static casts: Casts;
     clauses: Clauses;
+    [key: string]: any;
     constructor(attributes?: ModelAttributes);
     select(fields?: string | string[]): this;
     where(column: string, operator: string, value?: any): this;
@@ -46,18 +47,18 @@ export declare class Model {
     static with<T extends Model>(this: new () => T, relation: string): T;
     castAttribute(key: keyof Casts, value: any): any;
     prepareAttributeForStorage(key: keyof Casts, value: any): any;
-    cleanObject(object: any): any;
-    save(): Promise<any>;
-    delete(): Promise<any>;
+    cleanObject<T extends Model>(object: T): T;
+    save(): Promise<SQLResult>;
+    delete(): Promise<SQLResult>;
     static executeSql(sql: string, params?: any[]): Promise<SQLResult>;
-    get(): Promise<any>;
-    first(): Promise<any>;
+    get(): Promise<Model[]>;
+    first(): Promise<Model | null>;
     update(attributes: Partial<ModelAttributes>): Promise<SQLResult>;
-    static find(id: any): Promise<any>;
-    static insert(data: any): Promise<SQLResult>;
-    static seed(data: any): Promise<void>;
-    hasOne<T extends Model>(relatedModel: T, foreignKey: string, localKey?: string): Promise<T | null>;
-    hasMany<T extends Model>(relatedModel: T, foreignKey: string, localKey?: string): Promise<T | null>;
-    belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey?: string): Promise<T | null>;
+    static find(id: number | string): Promise<Model | null>;
+    static insert(data: Record<string, any>): Promise<SQLResult>;
+    static seed(data: Record<string, any>[]): Promise<void>;
+    hasOne<T extends Model>(relatedModel: T, foreignKey: string, localKey?: string): Promise<Model | null>;
+    hasMany<T extends Model>(relatedModel: T, foreignKey: string, localKey?: string): Promise<Model[]>;
+    belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey?: string): Promise<Model | null>;
 }
 export {};

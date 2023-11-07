@@ -151,8 +151,9 @@ export class Model {
   }
 
   // Instance method to get a clean object for output
-  cleanObject<T extends Model>(this: T): T {
-    const obj = { ...this };
+  cleanObject<T extends Model>(object: T): T {
+    const obj = { ...object };
+    // @ts-ignore
     delete obj.clauses;
     return obj;
   }
@@ -218,10 +219,11 @@ export class Model {
     });
   }
 
-  async get() {
-    // @ts-ignore
-    let query = `SELECT ${this.clauses.select} FROM ${this.constructor.tableName}`;
-    const params = [];
+  async get(): Promise<Model[]> {
+    const constructor = this.constructor as typeof Model;
+
+    let query = `SELECT ${this.clauses.select} FROM ${constructor.tableName}`;
+    const params: (string | number | boolean | null)[] = [];
   
     // Add WHERE clauses if any
     if (this.clauses.where.length) {
@@ -243,14 +245,11 @@ export class Model {
     }
   
     // Execute the SQL query
-    // @ts-ignore
-    const result = await this.constructor.executeSql(query, params);
+    const result = await constructor.executeSql(query, params);
   
     // Map the result rows to clean instances of the model
     const instances = result.rows._array.map(row => {
-      // @ts-ignore
-      const instance = new this.constructor(row);
-      // return instance.toCleanObject(); // Use the new method here
+      const instance = new constructor(row);
       return this.cleanObject(instance); // Use the new method here
     });
   
@@ -278,7 +277,7 @@ export class Model {
     return instances;
   }
 
-  async first() {
+  async first(): Promise<Model | null> {
     // console.log('first', this.constructor.name);
     this.limit(1);
     const results = await this.get();
@@ -290,11 +289,11 @@ export class Model {
     return this.save();
   }
 
-  static async find(id) {
+  static async find(id: number | string): Promise<Model | null> {
     return await new this().where('id', '=', id).first();
   }
 
-  static async insert(data) {
+  static async insert(data: Record<string, any>): Promise<SQLResult> {
     const now = new Date().toISOString();
     // Add createdAt and updatedAt to the data if not provided
     data.createdAt = data.createdAt || now;
@@ -313,7 +312,7 @@ export class Model {
     return await this.executeSql(sql, valuesForStorage);
   }
 
-  static async seed(data) {
+  static async seed(data: Record<string, any>[]) {
     // Check if the table already has data
     const existingData = await new this().first();
     if (!existingData) {
@@ -324,15 +323,15 @@ export class Model {
   }
 
   // Relationship methods
-  hasOne<T extends Model>(relatedModel: T, foreignKey: string, localKey: string = 'id'): Promise<T | null> {
+  hasOne<T extends Model>(relatedModel: T, foreignKey: string, localKey: string = 'id'): Promise<Model | null> {
     return relatedModel.where(foreignKey, '=', this[localKey]).first();
   }
 
-  hasMany<T extends Model>(relatedModel: T, foreignKey: string, localKey: string = 'id'): Promise<T | null> {
+  hasMany<T extends Model>(relatedModel: T, foreignKey: string, localKey: string = 'id'): Promise<Model[]> {
     return relatedModel.where(foreignKey, '=', this[localKey]).get();
   }
 
-  belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey: string = 'id'): Promise<T | null> {
+  belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey: string = 'id'): Promise<Model | null> {
     return relatedModel.where(otherKey, '=', this[foreignKey]).first();
   }
 }
