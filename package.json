@@ -1,6 +1,6 @@
 {
   "name": "expo-sqlite-eloquent-orm",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "An Expo SQLite ORM",
   "main": "dist/bundle.min.js",
   "types": "dist/index.d.ts",
@@ -32,13 +32,10 @@
   "devDependencies": {
     "dts-bundle-generator": "^8.1.2",
     "esbuild": "^0.19.5",
-    "terser": "^5.24.0",
     "typescript": "^5.2.2"
   },
-  "dependencies": {
-  },
   "peerDependencies": {
-    "expo-sqlite": "^11.6.0",
+    "expo-sqlite": "^11.3.3",
     "react": "^18.2.0",
     "react-native": "^0.72.6"
   }
