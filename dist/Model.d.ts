@@ -44,8 +44,8 @@ export declare class Model {
     static orderBy<T extends Model>(this: new () => T, column: string, direction?: 'ASC' | 'DESC'): T;
     static limit<T extends Model>(this: new () => T, number: number): T;
     static with<T extends Model>(this: new () => T, relation: string): T;
-    castAttribute(key: any, value: any): any;
-    prepareAttributeForStorage(key: any, value: any): any;
+    castAttribute(key: keyof Casts, value: any): any;
+    prepareAttributeForStorage(key: keyof Casts, value: any): any;
     cleanObject(object: any): any;
     save(): Promise<any>;
     delete(): Promise<any>;

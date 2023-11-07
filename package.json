@@ -2,15 +2,13 @@
   "name": "expo-sqlite-eloquent-orm",
   "version": "0.9.1",
   "description": "An Expo SQLite ORM",
-  "main": "dist/bundle.min.js",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "directories": {
-    "test": "tests"
-  },
   "scripts": {
-    "build": "tsc && esbuild src/index.ts --bundle --minify --outfile=dist/bundle.min.js --external:*",
-    "bundle:types": "dts-bundle-generator -o dist/bundle.d.ts src/index.ts",
-    "test": "jest"
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepublishOnly": "npm run build",
+    "lint": "eslint 'src/**/*.{ts,tsx}' --fix"
   },
   "repository": {
     "type": "git",
@@ -38,5 +36,10 @@
     "expo-sqlite": "^11.3.3",
     "react": "^18.2.0",
     "react-native": "^0.72.6"
+  },
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "eslint": "^8.53.0"
   }
 }

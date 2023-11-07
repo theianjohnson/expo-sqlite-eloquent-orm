@@ -42,6 +42,8 @@ export class Model {
 
   clauses: Clauses;
 
+  [key: string]: any;
+
   constructor(attributes: ModelAttributes = {}) {
     Object.assign(this, attributes);
     this.clauses = {
@@ -107,11 +109,11 @@ export class Model {
   }
 
   // Cast an attribute to the specified type
-  castAttribute(key, value) {
-    // @ts-ignore
-    if (this.constructor.casts[key]) {
-      // @ts-ignore
-      switch (this.constructor.casts[key]) {
+  castAttribute(key: keyof Casts, value: any): any {
+    const castType = (this.constructor as typeof Model).casts[key];
+    
+    if (castType) {
+      switch (castType) {
         case 'number':
           return Number(value);
         case 'boolean':
@@ -132,11 +134,12 @@ export class Model {
     return value;
   }
 
-  prepareAttributeForStorage(key, value) {
-    // @ts-ignore
-    if (this.constructor.casts[key]) {
-      // @ts-ignore
-      switch (this.constructor.casts[key]) {
+  prepareAttributeForStorage(key: keyof Casts, value: any): any {
+
+    const castType = (this.constructor as typeof Model).casts[key];
+
+    if (castType) {
+      switch (castType) {
         case 'json':
           return JSON.stringify(value);
         // Add other types as needed
@@ -148,13 +151,14 @@ export class Model {
   }
 
   // Instance method to get a clean object for output
-  cleanObject(object) {
-    delete object.clauses;
-    return object;
+  cleanObject<T extends Model>(this: T): T {
+    const obj = { ...this };
+    delete obj.clauses;
+    return obj;
   }
 
   // Instance methods
-  async save() {
+  async save(): Promise<SQLResult> {
     const now = new Date().toISOString();
     const fields = Object.keys(this).filter(key => key !== 'id' && key !== 'createdAt' && key !== 'updatedAt');
     const values = fields.map(field => this[field]);
@@ -165,16 +169,15 @@ export class Model {
       return this.prepareAttributeForStorage(fields[index], value);
     });
 
-    // @ts-ignore
+    const constructor = this.constructor as typeof Model;
+
     if (this.id) {
       // Update
       fields.push('updatedAt');
       valuesForStorage.push(now);
 
       const setClause = fields.map(field => `${field} = ?`).join(', ');
-      // @ts-ignore
-      sql = `UPDATE ${this.constructor.tableName} SET ${setClause} WHERE id = ?`;
-      // @ts-ignore
+      sql = `UPDATE ${constructor.tableName} SET ${setClause} WHERE id = ?`;
       valuesForStorage.push(this.id);
     } else {
       // Insert
@@ -182,29 +185,24 @@ export class Model {
       valuesForStorage.push(now, now);
 
       const placeholders = fields.map(() => '?').join(', ');
-      // @ts-ignore
-      sql = `INSERT INTO ${this.constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+      sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
     }
-
-    // @ts-ignore
-    const result = await this.constructor.executeSql(sql, valuesForStorage);
-    // @ts-ignore
+    const result = await constructor.executeSql(sql, valuesForStorage);
     if (!this.id && result.insertId) {
-      // @ts-ignore
       this.id = result.insertId;
     }
     return result;
   }
 
   async delete() {
-    // @ts-ignore
+    const constructor = this.constructor as typeof Model;
+
     if (!this.id) {
       throw new Error('Cannot delete a model without an id.');
     }
-    // @ts-ignore
-    const sql = `DELETE FROM ${this.constructor.tableName} WHERE id = ?`;
-    // @ts-ignore
-    return await this.constructor.executeSql(sql, [this.id]);
+
+    const sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`;
+    return await constructor.executeSql(sql, [this.id]);
   }
 
   static async executeSql(sql: string, params: any[] = []): Promise<SQLResult> {

@@ -1,7 +1,11 @@
 import { Model } from './Model';
 
-export class Migrations {
-  static async runMigrations(migrations) {
+type Migrations = {
+  [version: string]: string;
+};
+
+export class Migration {
+  static async runMigrations(migrations: Migrations): Promise<void> {
     await this.createMigrationsTable();
     for (const [version, sql] of Object.entries(migrations)) {
       const migrationApplied = await this.checkMigration(version);
@@ -13,7 +17,7 @@ export class Migrations {
     }
   }
 
-  static async createMigrationsTable() {
+  static async createMigrationsTable(): Promise<void> {
     const sql = `
       CREATE TABLE IF NOT EXISTS migrations (
         version TEXT PRIMARY KEY NOT NULL
@@ -22,13 +26,13 @@ export class Migrations {
     await Model.executeSql(sql);
   }
 
-  static async checkMigration(version) {
+  static async checkMigration(version: string): Promise<boolean> {
     const sql = `SELECT version FROM migrations WHERE version = ?`;
     const result = await Model.executeSql(sql, [version]);
     return result.rows.length > 0;
   }
 
-  static async applyMigration(version, sql) {
+  static async applyMigration(version: string, sql: string): Promise<void> {
     await Model.executeSql(sql);
     const insertSql = `INSERT INTO migrations (version) VALUES (?)`;
     await Model.executeSql(insertSql, [version]);
@@ -37,9 +41,9 @@ export class Migrations {
 }
 
 // Exported async function to run migrations
-export async function runMigrations(migrations) {
+export async function runMigrations(migrations: Migrations): Promise<void> {
   try {
-    await Migrations.runMigrations(migrations);
+    await Migration.runMigrations(migrations);
     console.log('Running migrations complete.');
   } catch (error) {
     console.error('Error running migrations:', error);

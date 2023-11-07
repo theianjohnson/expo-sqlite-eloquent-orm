@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -8,39 +31,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Model = void 0;
-var SQLite = require("expo-sqlite");
-var Model = /** @class */ (function () {
-    function Model(attributes) {
-        if (attributes === void 0) { attributes = {}; }
+const SQLite = __importStar(require("expo-sqlite"));
+class Model {
+    constructor(attributes = {}) {
         Object.assign(this, attributes);
         this.clauses = {
             select: '*',
@@ -51,58 +46,53 @@ var Model = /** @class */ (function () {
         };
     }
     // Instance methods for query building
-    Model.prototype.select = function (fields) {
-        if (fields === void 0) { fields = '*'; }
+    select(fields = '*') {
         this.clauses.select = Array.isArray(fields) ? fields.join(', ') : fields;
         return this;
-    };
-    Model.prototype.where = function (column, operator, value) {
+    }
+    where(column, operator, value) {
         if (value === undefined) {
             value = operator;
             operator = '=';
         }
-        this.clauses.where.push({ column: column, operator: operator, value: value });
+        this.clauses.where.push({ column, operator, value });
         return this;
-    };
-    Model.prototype.orderBy = function (column, direction) {
-        if (direction === void 0) { direction = 'ASC'; }
-        this.clauses.orderBy = { column: column, direction: direction };
+    }
+    orderBy(column, direction = 'ASC') {
+        this.clauses.orderBy = { column, direction };
         return this;
-    };
-    Model.prototype.limit = function (number) {
+    }
+    limit(number) {
         this.clauses.limit = number;
         return this;
-    };
-    Model.prototype.with = function (relation) {
+    }
+    with(relation) {
         this.clauses.withRelations.push(relation);
         return this;
-    };
+    }
     // Static methods that proxy to instance methods
-    Model.select = function (fields) {
-        if (fields === void 0) { fields = '*'; }
+    static select(fields = '*') {
         return new this().select(fields);
-    };
-    Model.where = function (column, operator, value) {
+    }
+    static where(column, operator, value) {
         return new this().where(column, operator, value);
-    };
-    Model.orderBy = function (column, direction) {
-        if (direction === void 0) { direction = 'ASC'; }
+    }
+    static orderBy(column, direction = 'ASC') {
         return new this().orderBy(column, direction);
-    };
-    Model.limit = function (number) {
+    }
+    static limit(number) {
         return new this().limit(number);
-    };
-    Model.with = function (relation) {
-        var instance = new this().with(relation);
+    }
+    static with(relation) {
+        const instance = new this().with(relation);
         console.log(instance.constructor.name, 'with', relation); // Check what the instance looks like
         return instance;
-    };
+    }
     // Cast an attribute to the specified type
-    Model.prototype.castAttribute = function (key, value) {
-        // @ts-ignore
-        if (this.constructor.casts[key]) {
-            // @ts-ignore
-            switch (this.constructor.casts[key]) {
+    castAttribute(key, value) {
+        const castType = this.constructor.casts[key];
+        if (castType) {
+            switch (castType) {
                 case 'number':
                     return Number(value);
                 case 'boolean':
@@ -122,12 +112,11 @@ var Model = /** @class */ (function () {
             }
         }
         return value;
-    };
-    Model.prototype.prepareAttributeForStorage = function (key, value) {
-        // @ts-ignore
-        if (this.constructor.casts[key]) {
-            // @ts-ignore
-            switch (this.constructor.casts[key]) {
+    }
+    prepareAttributeForStorage(key, value) {
+        const castType = this.constructor.casts[key];
+        if (castType) {
+            switch (castType) {
                 case 'json':
                     return JSON.stringify(value);
                 // Add other types as needed
@@ -136,288 +125,191 @@ var Model = /** @class */ (function () {
             }
         }
         return value;
-    };
+    }
     // Instance method to get a clean object for output
-    Model.prototype.cleanObject = function (object) {
+    cleanObject(object) {
         delete object.clauses;
         return object;
-    };
+    }
     // Instance methods
-    Model.prototype.save = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var now, fields, values, sql, valuesForStorage, setClause, placeholders, result;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        now = new Date().toISOString();
-                        fields = Object.keys(this).filter(function (key) { return key !== 'id' && key !== 'createdAt' && key !== 'updatedAt'; });
-                        values = fields.map(function (field) { return _this[field]; });
-                        valuesForStorage = values.map(function (value, index) {
-                            return _this.prepareAttributeForStorage(fields[index], value);
-                        });
+    save() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const now = new Date().toISOString();
+            const fields = Object.keys(this).filter(key => key !== 'id' && key !== 'createdAt' && key !== 'updatedAt');
+            const values = fields.map(field => this[field]);
+            let sql;
+            // Cast attributes for storage
+            const valuesForStorage = values.map((value, index) => {
+                return this.prepareAttributeForStorage(fields[index], value);
+            });
+            // @ts-ignore
+            if (this.id) {
+                // Update
+                fields.push('updatedAt');
+                valuesForStorage.push(now);
+                const setClause = fields.map(field => `${field} = ?`).join(', ');
+                // @ts-ignore
+                sql = `UPDATE ${this.constructor.tableName} SET ${setClause} WHERE id = ?`;
+                // @ts-ignore
+                valuesForStorage.push(this.id);
+            }
+            else {
+                // Insert
+                fields.push('createdAt', 'updatedAt');
+                valuesForStorage.push(now, now);
+                const placeholders = fields.map(() => '?').join(', ');
+                // @ts-ignore
+                sql = `INSERT INTO ${this.constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+            }
+            // @ts-ignore
+            const result = yield this.constructor.executeSql(sql, valuesForStorage);
+            // @ts-ignore
+            if (!this.id && result.insertId) {
+                // @ts-ignore
+                this.id = result.insertId;
+            }
+            return result;
+        });
+    }
+    delete() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // @ts-ignore
+            if (!this.id) {
+                throw new Error('Cannot delete a model without an id.');
+            }
+            // @ts-ignore
+            const sql = `DELETE FROM ${this.constructor.tableName} WHERE id = ?`;
+            // @ts-ignore
+            return yield this.constructor.executeSql(sql, [this.id]);
+        });
+    }
+    static executeSql(sql, params = []) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                this.db.transaction(tx => {
+                    tx.executeSql(sql, params, (_, result) => {
+                        resolve(result);
                         // @ts-ignore
-                        if (this.id) {
-                            // Update
-                            fields.push('updatedAt');
-                            valuesForStorage.push(now);
-                            setClause = fields.map(function (field) { return "".concat(field, " = ?"); }).join(', ');
-                            // @ts-ignore
-                            sql = "UPDATE ".concat(this.constructor.tableName, " SET ").concat(setClause, " WHERE id = ?");
-                            // @ts-ignore
-                            valuesForStorage.push(this.id);
+                    }, (transaction, error) => {
+                        reject(error);
+                    });
+                });
+            });
+        });
+    }
+    get() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // @ts-ignore
+            let query = `SELECT ${this.clauses.select} FROM ${this.constructor.tableName}`;
+            const params = [];
+            // Add WHERE clauses if any
+            if (this.clauses.where.length) {
+                const whereClauses = this.clauses.where.map(clause => {
+                    params.push(clause.value);
+                    return `${clause.column} ${clause.operator} ?`;
+                }).join(' AND ');
+                query += ` WHERE ${whereClauses}`;
+            }
+            // Add ORDER BY clause if set
+            if (this.clauses.orderBy) {
+                query += ` ORDER BY ${this.clauses.orderBy.column} ${this.clauses.orderBy.direction}`;
+            }
+            // Add LIMIT clause if set
+            if (this.clauses.limit !== null) {
+                query += ` LIMIT ${this.clauses.limit}`;
+            }
+            // Execute the SQL query
+            // @ts-ignore
+            const result = yield this.constructor.executeSql(query, params);
+            // Map the result rows to clean instances of the model
+            const instances = result.rows._array.map(row => {
+                // @ts-ignore
+                const instance = new this.constructor(row);
+                // return instance.toCleanObject(); // Use the new method here
+                return this.cleanObject(instance); // Use the new method here
+            });
+            // Load relationships if any are specified
+            // console.log(`Loading ${this.constructor.name}.${this.clauses.withRelations}`);
+            for (const relationName of this.clauses.withRelations) {
+                const relation = this[relationName];
+                if (typeof relation === 'function') {
+                    // Load the relation data for each instance
+                    yield Promise.all(instances.map((instance) => __awaiter(this, void 0, void 0, function* () {
+                        try {
+                            instance[relationName] = yield instance[relationName]();
+                            // console.log(`${this.constructor.name}.${relationName}: ${instance[relationName]}`);
                         }
-                        else {
-                            // Insert
-                            fields.push('createdAt', 'updatedAt');
-                            valuesForStorage.push(now, now);
-                            placeholders = fields.map(function () { return '?'; }).join(', ');
-                            // @ts-ignore
-                            sql = "INSERT INTO ".concat(this.constructor.tableName, " (").concat(fields.join(', '), ") VALUES (").concat(placeholders, ")");
+                        catch (error) {
+                            console.error(`Failed to load relation '${relationName}' for instance with ID ${instance.id}:`, error);
+                            instance[relationName] = null;
                         }
-                        return [4 /*yield*/, this.constructor.executeSql(sql, valuesForStorage)];
-                    case 1:
-                        result = _a.sent();
-                        // @ts-ignore
-                        if (!this.id && result.insertId) {
-                            // @ts-ignore
-                            this.id = result.insertId;
-                        }
-                        return [2 /*return*/, result];
+                    })));
                 }
-            });
+            }
+            // Reset the clauses for the next query
+            this.cleanObject(this);
+            return instances;
         });
-    };
-    Model.prototype.delete = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var sql;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        // @ts-ignore
-                        if (!this.id) {
-                            throw new Error('Cannot delete a model without an id.');
-                        }
-                        sql = "DELETE FROM ".concat(this.constructor.tableName, " WHERE id = ?");
-                        return [4 /*yield*/, this.constructor.executeSql(sql, [this.id])];
-                    case 1: 
-                    // @ts-ignore
-                    return [2 /*return*/, _a.sent()];
+    }
+    first() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // console.log('first', this.constructor.name);
+            this.limit(1);
+            const results = yield this.get();
+            return results[0] || null;
+        });
+    }
+    update(attributes) {
+        return __awaiter(this, void 0, void 0, function* () {
+            Object.assign(this, attributes);
+            return this.save();
+        });
+    }
+    static find(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield new this().where('id', '=', id).first();
+        });
+    }
+    static insert(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const now = new Date().toISOString();
+            // Add createdAt and updatedAt to the data if not provided
+            data.createdAt = data.createdAt || now;
+            data.updatedAt = data.updatedAt || now;
+            const fields = Object.keys(data).join(', ');
+            const placeholders = Object.keys(data).map(() => '?').join(', ');
+            const values = Object.values(data);
+            // Cast attributes for storage
+            const valuesForStorage = values.map((value, index) => {
+                return this.prototype.prepareAttributeForStorage(Object.keys(data)[index], value);
+            });
+            const sql = `INSERT INTO ${this.tableName} (${fields}) VALUES (${placeholders})`;
+            return yield this.executeSql(sql, valuesForStorage);
+        });
+    }
+    static seed(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Check if the table already has data
+            const existingData = yield new this().first();
+            if (!existingData) {
+                for (const item of data) {
+                    yield this.insert(item);
                 }
-            });
+            }
         });
-    };
-    Model.executeSql = function (sql, params) {
-        if (params === void 0) { params = []; }
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        _this.db.transaction(function (tx) {
-                            tx.executeSql(sql, params, function (_, result) {
-                                resolve(result);
-                                // @ts-ignore
-                            }, function (transaction, error) {
-                                reject(error);
-                            });
-                        });
-                    })];
-            });
-        });
-    };
-    Model.prototype.get = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var query, params, whereClauses, result, instances, _loop_1, this_1, _i, _a, relationName;
-            var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        query = "SELECT ".concat(this.clauses.select, " FROM ").concat(this.constructor.tableName);
-                        params = [];
-                        // Add WHERE clauses if any
-                        if (this.clauses.where.length) {
-                            whereClauses = this.clauses.where.map(function (clause) {
-                                params.push(clause.value);
-                                return "".concat(clause.column, " ").concat(clause.operator, " ?");
-                            }).join(' AND ');
-                            query += " WHERE ".concat(whereClauses);
-                        }
-                        // Add ORDER BY clause if set
-                        if (this.clauses.orderBy) {
-                            query += " ORDER BY ".concat(this.clauses.orderBy.column, " ").concat(this.clauses.orderBy.direction);
-                        }
-                        // Add LIMIT clause if set
-                        if (this.clauses.limit !== null) {
-                            query += " LIMIT ".concat(this.clauses.limit);
-                        }
-                        return [4 /*yield*/, this.constructor.executeSql(query, params)];
-                    case 1:
-                        result = _b.sent();
-                        instances = result.rows._array.map(function (row) {
-                            // @ts-ignore
-                            var instance = new _this.constructor(row);
-                            // return instance.toCleanObject(); // Use the new method here
-                            return _this.cleanObject(instance); // Use the new method here
-                        });
-                        _loop_1 = function (relationName) {
-                            var relation;
-                            return __generator(this, function (_c) {
-                                switch (_c.label) {
-                                    case 0:
-                                        relation = this_1[relationName];
-                                        if (!(typeof relation === 'function')) return [3 /*break*/, 2];
-                                        // Load the relation data for each instance
-                                        return [4 /*yield*/, Promise.all(instances.map(function (instance) { return __awaiter(_this, void 0, void 0, function () {
-                                                var _a, _b, error_1;
-                                                return __generator(this, function (_c) {
-                                                    switch (_c.label) {
-                                                        case 0:
-                                                            _c.trys.push([0, 2, , 3]);
-                                                            _a = instance;
-                                                            _b = relationName;
-                                                            return [4 /*yield*/, instance[relationName]()];
-                                                        case 1:
-                                                            _a[_b] = _c.sent();
-                                                            return [3 /*break*/, 3];
-                                                        case 2:
-                                                            error_1 = _c.sent();
-                                                            console.error("Failed to load relation '".concat(relationName, "' for instance with ID ").concat(instance.id, ":"), error_1);
-                                                            instance[relationName] = null;
-                                                            return [3 /*break*/, 3];
-                                                        case 3: return [2 /*return*/];
-                                                    }
-                                                });
-                                            }); }))];
-                                    case 1:
-                                        // Load the relation data for each instance
-                                        _c.sent();
-                                        _c.label = 2;
-                                    case 2: return [2 /*return*/];
-                                }
-                            });
-                        };
-                        this_1 = this;
-                        _i = 0, _a = this.clauses.withRelations;
-                        _b.label = 2;
-                    case 2:
-                        if (!(_i < _a.length)) return [3 /*break*/, 5];
-                        relationName = _a[_i];
-                        return [5 /*yield**/, _loop_1(relationName)];
-                    case 3:
-                        _b.sent();
-                        _b.label = 4;
-                    case 4:
-                        _i++;
-                        return [3 /*break*/, 2];
-                    case 5:
-                        // Reset the clauses for the next query
-                        this.cleanObject(this);
-                        return [2 /*return*/, instances];
-                }
-            });
-        });
-    };
-    Model.prototype.first = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var results;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        // console.log('first', this.constructor.name);
-                        this.limit(1);
-                        return [4 /*yield*/, this.get()];
-                    case 1:
-                        results = _a.sent();
-                        return [2 /*return*/, results[0] || null];
-                }
-            });
-        });
-    };
-    Model.prototype.update = function (attributes) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                Object.assign(this, attributes);
-                return [2 /*return*/, this.save()];
-            });
-        });
-    };
-    Model.find = function (id) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, new this().where('id', '=', id).first()];
-                    case 1: return [2 /*return*/, _a.sent()];
-                }
-            });
-        });
-    };
-    Model.insert = function (data) {
-        return __awaiter(this, void 0, void 0, function () {
-            var now, fields, placeholders, values, valuesForStorage, sql;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        now = new Date().toISOString();
-                        // Add createdAt and updatedAt to the data if not provided
-                        data.createdAt = data.createdAt || now;
-                        data.updatedAt = data.updatedAt || now;
-                        fields = Object.keys(data).join(', ');
-                        placeholders = Object.keys(data).map(function () { return '?'; }).join(', ');
-                        values = Object.values(data);
-                        valuesForStorage = values.map(function (value, index) {
-                            return _this.prototype.prepareAttributeForStorage(Object.keys(data)[index], value);
-                        });
-                        sql = "INSERT INTO ".concat(this.tableName, " (").concat(fields, ") VALUES (").concat(placeholders, ")");
-                        return [4 /*yield*/, this.executeSql(sql, valuesForStorage)];
-                    case 1: return [2 /*return*/, _a.sent()];
-                }
-            });
-        });
-    };
-    Model.seed = function (data) {
-        return __awaiter(this, void 0, void 0, function () {
-            var existingData, _i, data_1, item;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, new this().first()];
-                    case 1:
-                        existingData = _a.sent();
-                        if (!!existingData) return [3 /*break*/, 5];
-                        _i = 0, data_1 = data;
-                        _a.label = 2;
-                    case 2:
-                        if (!(_i < data_1.length)) return [3 /*break*/, 5];
-                        item = data_1[_i];
-                        return [4 /*yield*/, this.insert(item)];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4:
-                        _i++;
-                        return [3 /*break*/, 2];
-                    case 5: return [2 /*return*/];
-                }
-            });
-        });
-    };
+    }
     // Relationship methods
-    Model.prototype.hasOne = function (relatedModel, foreignKey, localKey) {
-        if (localKey === void 0) { localKey = 'id'; }
+    hasOne(relatedModel, foreignKey, localKey = 'id') {
         return relatedModel.where(foreignKey, '=', this[localKey]).first();
-    };
-    Model.prototype.hasMany = function (relatedModel, foreignKey, localKey) {
-        if (localKey === void 0) { localKey = 'id'; }
+    }
+    hasMany(relatedModel, foreignKey, localKey = 'id') {
         return relatedModel.where(foreignKey, '=', this[localKey]).get();
-    };
-    Model.prototype.belongsTo = function (relatedModel, foreignKey, otherKey) {
-        if (otherKey === void 0) { otherKey = 'id'; }
+    }
+    belongsTo(relatedModel, foreignKey, otherKey = 'id') {
         return relatedModel.where(otherKey, '=', this[foreignKey]).first();
-    };
-    Model.db = SQLite.openDatabase('app.db');
-    Model.tableName = '';
-    Model.casts = {};
-    return Model;
-}());
+    }
+}
 exports.Model = Model;
-//# sourceMappingURL=Model.js.map
+Model.db = SQLite.openDatabase('app.db');
+Model.tableName = '';
+Model.casts = {};
