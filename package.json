@@ -1,0 +1,29 @@
+{
+  "name": "expo-sqlite-eloquent-orm",
+  "version": "1.0.0",
+  "description": "An Expo SQLite ORM",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theianjohnson/expo-sqlite-eloquent-orm.git"
+  },
+  "keywords": [
+    "expo",
+    "sqlite",
+    "orm",
+    "database",
+    "eloquent"
+  ],
+  "author": "Ian Johnson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/theianjohnson/expo-sqlite-eloquent-orm/issues"
+  },
+  "homepage": "https://github.com/theianjohnson/expo-sqlite-eloquent-orm#readme"
+}
