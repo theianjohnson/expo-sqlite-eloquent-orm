@@ -28,18 +28,22 @@
   },
   "homepage": "https://github.com/theianjohnson/expo-sqlite-eloquent-orm#readme",
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
     "dts-bundle-generator": "^8.1.2",
     "esbuild": "^0.19.5",
+    "eslint": "^8.53.0",
+    "eslint-config-standard-with-typescript": "^39.1.1",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-n": "^16.3.0",
+    "eslint-plugin-promise": "^6.1.1",
+    "eslint-plugin-react": "^7.33.2",
+    "jest": "^29.7.0",
     "typescript": "^5.2.2"
   },
   "peerDependencies": {
     "expo-sqlite": "^11.3.3",
     "react": "^18.2.0",
     "react-native": "^0.72.6"
-  },
-  "dependencies": {
-    "@typescript-eslint/eslint-plugin": "^6.10.0",
-    "@typescript-eslint/parser": "^6.10.0",
-    "eslint": "^8.53.0"
   }
 }

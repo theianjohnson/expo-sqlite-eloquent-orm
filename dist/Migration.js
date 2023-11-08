@@ -21,7 +21,7 @@ class Migration {
                     yield this.applyMigration(version, sql);
                 }
                 else {
-                    console.log(`No migrations to apply.`);
+                    console.log('No migrations to apply.');
                 }
             }
         });
@@ -38,7 +38,7 @@ class Migration {
     }
     static checkMigration(version) {
         return __awaiter(this, void 0, void 0, function* () {
-            const sql = `SELECT version FROM migrations WHERE version = ?`;
+            const sql = 'SELECT version FROM migrations WHERE version = ?';
             const result = yield Model_1.Model.executeSql(sql, [version]);
             return result.rows.length > 0;
         });
@@ -46,7 +46,7 @@ class Migration {
     static applyMigration(version, sql) {
         return __awaiter(this, void 0, void 0, function* () {
             yield Model_1.Model.executeSql(sql);
-            const insertSql = `INSERT INTO migrations (version) VALUES (?)`;
+            const insertSql = 'INSERT INTO migrations (version) VALUES (?)';
             yield Model_1.Model.executeSql(insertSql, [version]);
             console.log(`Migration ${version} applied.`);
         });

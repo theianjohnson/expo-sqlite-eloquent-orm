@@ -1,8 +1,6 @@
 import * as SQLite from 'expo-sqlite';
-type Casts = {
-    [key: string]: 'number' | 'boolean' | 'string' | 'json';
-};
-type Clauses = {
+type Casts = Record<string, 'number' | 'boolean' | 'string' | 'json'>;
+interface Clauses {
     select: string;
     where: Array<{
         column: string;
@@ -15,19 +13,17 @@ type Clauses = {
     } | null;
     limit: number | null;
     withRelations: string[];
-};
-type ModelAttributes = {
-    [key: string]: any;
-};
-type SQLResult = {
+}
+type ModelAttributes = Record<string, any>;
+interface SQLResult {
     insertId?: number;
     rowsAffected: number;
     rows: {
         _array: ModelAttributes[];
         length: number;
-        item(index: number): ModelAttributes;
+        item: (index: number) => ModelAttributes;
     };
-};
+}
 export declare class Model {
     static db: SQLite.SQLiteDatabase;
     static tableName: string;
@@ -40,6 +36,7 @@ export declare class Model {
     orderBy(column: string, direction?: 'ASC' | 'DESC'): this;
     limit(number: number): this;
     with(relation: string): this;
+    static get(): Promise<Model[]>;
     static select<T extends Model>(this: new () => T, fields?: string | string[]): T;
     static where<T extends Model>(this: new () => T, column: string, operator: string, value?: any): T;
     static orderBy<T extends Model>(this: new () => T, column: string, direction?: 'ASC' | 'DESC'): T;
@@ -56,7 +53,7 @@ export declare class Model {
     update(attributes: Partial<ModelAttributes>): Promise<SQLResult>;
     static find(id: number | string): Promise<Model | null>;
     static insert(data: Record<string, any>): Promise<SQLResult>;
-    static seed(data: Record<string, any>[]): Promise<void>;
+    static seed(data: Array<Record<string, any>>): Promise<void>;
     hasOne<T extends Model>(relatedModel: T, foreignKey: string, localKey?: string): Promise<Model | null>;
     hasMany<T extends Model>(relatedModel: T, foreignKey: string, localKey?: string): Promise<Model[]>;
     belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey?: string): Promise<Model | null>;

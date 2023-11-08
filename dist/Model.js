@@ -42,7 +42,7 @@ class Model {
             where: [],
             orderBy: null,
             limit: null,
-            withRelations: [],
+            withRelations: []
         };
     }
     // Instance methods for query building
@@ -71,6 +71,11 @@ class Model {
         return this;
     }
     // Static methods that proxy to instance methods
+    static get() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield new this().get();
+        });
+    }
     static select(fields = '*') {
         return new this().select(fields);
     }
@@ -128,10 +133,9 @@ class Model {
     }
     // Instance method to get a clean object for output
     cleanObject(object) {
-        const obj = Object.assign({}, object);
-        // @ts-ignore
-        delete obj.clauses;
-        return obj;
+        // @ts-expect-error
+        delete object.clauses;
+        return object;
     }
     // Instance methods
     save() {
@@ -179,11 +183,11 @@ class Model {
     }
     static executeSql(sql, params = []) {
         return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve, reject) => {
+            return yield new Promise((resolve, reject) => {
                 this.db.transaction(tx => {
                     tx.executeSql(sql, params, (_, result) => {
                         resolve(result);
-                        // @ts-ignore
+                        // @ts-expect-error
                     }, (transaction, error) => {
                         reject(error);
                     });
@@ -197,7 +201,7 @@ class Model {
             let query = `SELECT ${this.clauses.select} FROM ${constructor.tableName}`;
             const params = [];
             // Add WHERE clauses if any
-            if (this.clauses.where.length) {
+            if (this.clauses.where.length > 0) {
                 const whereClauses = this.clauses.where.map(clause => {
                     params.push(clause.value);
                     return `${clause.column} ${clause.operator} ?`;
@@ -253,7 +257,7 @@ class Model {
     update(attributes) {
         return __awaiter(this, void 0, void 0, function* () {
             Object.assign(this, attributes);
-            return this.save();
+            return yield this.save();
         });
     }
     static find(id) {
@@ -291,13 +295,19 @@ class Model {
     }
     // Relationship methods
     hasOne(relatedModel, foreignKey, localKey = 'id') {
-        return relatedModel.where(foreignKey, '=', this[localKey]).first();
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield relatedModel.where(foreignKey, '=', this[localKey]).first();
+        });
     }
     hasMany(relatedModel, foreignKey, localKey = 'id') {
-        return relatedModel.where(foreignKey, '=', this[localKey]).get();
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield relatedModel.where(foreignKey, '=', this[localKey]).get();
+        });
     }
     belongsTo(relatedModel, foreignKey, otherKey = 'id') {
-        return relatedModel.where(otherKey, '=', this[foreignKey]).first();
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield relatedModel.where(otherKey, '=', this[foreignKey]).first();
+        });
     }
 }
 exports.Model = Model;

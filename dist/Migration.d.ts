@@ -1,6 +1,4 @@
-type Migrations = {
-    [version: string]: string;
-};
+type Migrations = Record<string, string>;
 export declare class Migration {
     static runMigrations(migrations: Migrations): Promise<void>;
     static createMigrationsTable(): Promise<void>;
