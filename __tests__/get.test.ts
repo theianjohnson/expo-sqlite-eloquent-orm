@@ -1,11 +1,12 @@
 // @ts-nocheck
 import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
+import { mockDataStore } from '../__mocks__/mockDataStore';
 
 describe('Model.get', () => {
   test('should retrieve all instances of a model', async () => {
     const people = await MockPerson.get();
-    expect(people.length).toBe(3);
+    expect(people.length).toBe(mockDataStore.people.length);
     expect(people[0].name).toBeDefined();
     expect(people[1].name).toBeDefined();
     expect(people[2].name).toBeDefined();
@@ -13,7 +14,7 @@ describe('Model.get', () => {
 
   test('should retrieve all instances of another model', async () => {
     const groups = await MockGroup.get();
-    expect(groups.length).toBe(3);
+    expect(groups.length).toBe(mockDataStore.groups.length);
     expect(groups[0].name).toBeDefined();
     expect(groups[1].name).toBeDefined();
     expect(groups[2].name).toBeDefined();

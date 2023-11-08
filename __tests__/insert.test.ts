@@ -3,8 +3,18 @@ import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
 import { mockDataStore } from '../__mocks__/mockDataStore';
 
-describe('Model.insert', () => {
-  it('should insert a new person record into the database', async () => {
+describe('Model insert', () => {
+  it('should create a new person and save', async () => {
+    const newPerson = new MockPerson({ name: 'John', groupId: 1 });
+    const expectedInsertId = mockDataStore.people.length + 1;
+
+    const result = await newPerson.save();
+
+    expect(result.insertId).toBe(expectedInsertId);
+    expect(mockDataStore.people).toContainEqual(expect.objectContaining(newPerson));
+  });
+
+  it('should insert a new person record into the database statically', async () => {
     const newPersonData = { name: 'John', groupId: 1 };
     const expectedInsertId = mockDataStore.people.length + 1;
 

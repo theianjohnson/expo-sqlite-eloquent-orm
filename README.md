@@ -40,6 +40,7 @@ class User extends Model {
   };
   // Define relationships, custom methods, etc.
 }
+```
 
 ### Querying
 
