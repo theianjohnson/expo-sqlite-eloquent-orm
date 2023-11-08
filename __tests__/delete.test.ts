@@ -5,7 +5,7 @@ import { mockDataStore } from '../__mocks__/mockDataStore';
 
 const originalMockDataStore = {...mockDataStore};
 
-describe('Model.delete', () => {
+describe('delete', () => {
   beforeEach(() => {
     // Reset the mockDataStore to a known state before each test
     mockDataStore = {...originalMockDataStore};

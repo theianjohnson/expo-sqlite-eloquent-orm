@@ -3,7 +3,7 @@ import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
 import { mockDataStore } from '../__mocks__/mockDataStore';
 
-describe('Model belongsTo', () => {
+describe('belongsTo', () => {
   it('should retrieve related group using belongsTo relationship', async () => {
     // Retrieve a person from the data store
     const mockPerson = new MockPerson(mockDataStore.people[0]);

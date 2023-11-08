@@ -3,7 +3,7 @@ import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
 import { mockDataStore } from '../__mocks__/mockDataStore';
 
-describe('Model hasMany', () => {
+describe('hasMany', () => {
   it('should retrieve related people using hasMany relationship', async () => {
     // Retrieve a group from the data store
     const mockGroup = new MockGroup(mockDataStore.groups[0]);

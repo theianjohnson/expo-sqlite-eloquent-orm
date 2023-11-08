@@ -133,7 +133,7 @@ export class Model {
     switch (castType) {
       case 'number':
         // Ensure that numbers are finite before storing, otherwise store as null
-        return isFinite(value) ? value : null;
+        return isFinite(value) ? Number(value) : null;
       case 'boolean':
         // Convert boolean to a format that SQLite understands (1 for true, 0 for false)
         return value ? 1 : 0;

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Model } from '../src/Model';
 
-describe('Model.castAttribute', () => {
+describe('castAttribute', () => {
   it('should cast attributes to the correct types', () => {
     expect(Model.castAttribute('number', '123')).toBe(123);
     expect(Model.castAttribute('boolean', 'true')).toBe(true);

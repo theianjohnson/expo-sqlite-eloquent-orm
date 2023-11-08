@@ -3,7 +3,7 @@ import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
 import { mockDataStore } from '../__mocks__/mockDataStore';
 
-describe('Model.get', () => {
+describe('get', () => {
   test('should retrieve all instances of a model', async () => {
     const people = await MockPerson.get();
     expect(people.length).toBe(mockDataStore.people.length);
