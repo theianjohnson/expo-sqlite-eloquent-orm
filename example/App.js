@@ -8,7 +8,7 @@ class Group extends Model {
   static tableName = 'groups';
 
   people() {
-    return this.hasMany(Person, 'group_id');
+    return this.hasMany(Person, 'groupId');
   }
 }
 
@@ -16,7 +16,7 @@ class Person extends Model {
   static tableName = 'people';
 
   group() {
-    return this.belongsTo(Group, 'group_id');
+    return this.belongsTo(Group, 'groupId');
   }
 }
 
@@ -35,7 +35,7 @@ const migrations = {
       id INTEGER PRIMARY KEY NOT NULL,
       createdAt DATETIME NOT NULL,
       updatedAt DATETIME NOT NULL,
-      group_id INTEGER NOT NULL,
+      groupId INTEGER NOT NULL,
       name TEXT
     );
   `,
@@ -58,6 +58,7 @@ export default function App() {
 
   const [groups, setGroups] = useState([]);
   const [people, setPeople] = useState([]);
+  const [person, setPerson] = useState(null);
 
   // Run migrations and seed data
   useEffect(() => {
@@ -73,6 +74,11 @@ export default function App() {
       const people = await Person.with('group').get();
       setPeople(people);
       console.log('People', people);
+
+      const person = await Person.find(1);
+      await person.update({name: 'Updated Nora'});
+      setPerson(person);
+      console.log('Person', person);
     })();
   }, [])
 
@@ -90,6 +96,13 @@ export default function App() {
       {!!people.length && people.map(person => (
         <Text key={person.id}>{person.name} - {person?.group?.name}</Text>
       ))}
+
+      <View style={{ height: 10 }} />
+
+      <Text>Person:</Text>
+      {!!person && (
+        <Text>{person.name}</Text>
+      )}
 
       <StatusBar style="auto" />
     </View>

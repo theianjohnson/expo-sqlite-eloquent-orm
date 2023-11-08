@@ -6,6 +6,6 @@ export class MockGroup extends Model {
 
   people() {
     const MockPersonInstance = new MockPerson() as unknown as Model;
-    return this.belongsTo(MockPersonInstance, 'group_id');
+    return this.belongsTo(MockPersonInstance, 'groupId');
   }
 }

@@ -3,9 +3,9 @@ import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
 import { mockDataStore } from '../__mocks__/mockDataStore';
 
-describe('Model insert method', () => {
+describe('Model.insert', () => {
   it('should insert a new person record into the database', async () => {
-    const newPersonData = { name: 'John', group_id: 1 };
+    const newPersonData = { name: 'John', groupId: 1 };
     const expectedInsertId = mockDataStore.people.length + 1;
 
     const result = await MockPerson.insert(newPersonData);

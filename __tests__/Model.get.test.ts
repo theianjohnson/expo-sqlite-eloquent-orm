@@ -2,7 +2,7 @@
 import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
 
-describe('Model get method', () => {
+describe('Model.get', () => {
   test('should retrieve all instances of a model', async () => {
     const people = await MockPerson.get();
     expect(people.length).toBe(3);
@@ -31,9 +31,9 @@ describe('Model get method', () => {
   });
 
   test('should handle complex queries with multiple where clauses', async () => {
-    const person = await MockPerson.where('name', '=', 'Nora').where('group_id', '=', 1).first();
+    const person = await MockPerson.where('name', '=', 'Nora').where('groupId', '=', 1).first();
     expect(person).toBeDefined();
     expect(person!.name).toBe('Nora');
-    expect(person!.group_id).toBe(1);
+    expect(person!.groupId).toBe(1);
   });
 });
