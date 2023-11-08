@@ -49,9 +49,9 @@ const groupSeedData = [
 ];
 
 const peopleSeedData = [
-  { name: 'Nora', group_id: 1 },
-  { name: 'Bob', group_id: 2 },
-  { name: 'Charlie', group_id: 1 },
+  { name: 'Nora', groupId: 1 },
+  { name: 'Bob', groupId: 2 },
+  { name: 'Charlie', groupId: 1 },
 ];
 
 export default function App() {
@@ -76,7 +76,7 @@ export default function App() {
       console.log('People', people);
 
       const person = await Person.find(1);
-      await person.update({name: 'Updated Nora'});
+      await person.update({name: 'Nora II'});
       setPerson(person);
       console.log('Person', person);
     })();
