@@ -24,6 +24,8 @@ yarn add expo-sqlite-eloquent-orm
 
 To get started with `expo-sqlite-eloquent-orm`, you'll need to define your models and perform basic CRUD operations.
 
+See https://github.com/theianjohnson/expo-sqlite-eloquent-orm/blob/main/example/App.js
+
 ### Defining Models
 
 Create models by extending the `Model` class. Specify your table name and any casts for attributes:

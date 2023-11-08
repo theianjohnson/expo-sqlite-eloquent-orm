@@ -19,7 +19,6 @@ describe('Model.delete', () => {
   });
 
   it('should remove the record from the mockDataStore', async () => {
-    console.log(mockDataStore);
     const person = await MockPerson.find(1);
     await person.delete();
     expect(mockDataStore.people.some(p => p.id === 1)).toBe(false);

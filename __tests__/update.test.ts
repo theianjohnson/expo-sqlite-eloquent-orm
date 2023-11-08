@@ -6,10 +6,8 @@ import { mockDataStore } from '../__mocks__/mockDataStore';
 describe('Model.update', () => {
   it('should update a record with the given attributes', async () => {
     const modelInstance = await MockPerson.where('name', 'Nora').first();
-    console.log(modelInstance);
     const updatedAttributes = { name: 'Eleanor' };
     await modelInstance.update(updatedAttributes);
-    console.log(mockDataStore.people)
     expect(mockDataStore.people[0].name).toBe('Eleanor');
   });
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 export const mockDataStore = {
   people: [
     { id: 1, name: 'Nora', groupId: 1 },

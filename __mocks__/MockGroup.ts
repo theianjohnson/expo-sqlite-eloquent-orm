@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Model } from '../src/Model';
 import { MockPerson } from './MockPerson';
 

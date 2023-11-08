@@ -107,48 +107,68 @@ export class Model {
   }
 
   // Cast an attribute to the specified type
-  castAttribute (key: keyof Casts, value: any): any {
-    const castType = (this.constructor as typeof Model).casts[key]
-
-    if (castType) {
-      switch (castType) {
-        case 'number':
-          return Number(value)
-        case 'boolean':
-          return Boolean(value)
-        case 'string':
-          return String(value)
-        case 'json':
-          try {
-            return JSON.parse(value)
-          } catch (e) {
-            return value
-          }
-        // Add other types as needed
-        default:
-          return value
-      }
+  static castAttribute(key: keyof Casts, value: any): any {
+    switch (key) {
+      case 'number':
+        return Number(value);
+      case 'boolean':
+        return Boolean(value);
+      case 'string':
+        return String(value);
+      case 'json':
+        try {
+          return JSON.parse(value);
+        } catch (e) {
+          return value;
+        }
+      // Add other types as needed
+      default:
+        return value;
     }
-    return value
   }
 
-  prepareAttributeForStorage (key: keyof Casts, value: any): any {
-    const castType = (this.constructor as typeof Model).casts[key]
-
-    if (castType) {
-      switch (castType) {
-        case 'json':
-          return JSON.stringify(value)
-        // Add other types as needed
-        default:
-          return value
-      }
+  static prepareAttributeForStorage(key: keyof Casts, value: any): any {
+    const castType = this.casts[key];
+    
+    switch (castType) {
+      case 'number':
+        // Ensure that numbers are finite before storing, otherwise store as null
+        return isFinite(value) ? value : null;
+      case 'boolean':
+        // Convert boolean to a format that SQLite understands (1 for true, 0 for false)
+        return value ? 1 : 0;
+      case 'string':
+        // Ensure that the value is a string
+        return String(value);
+      case 'json':
+        // Stringify JSON objects
+        try {
+          return JSON.stringify(value);
+        } catch (e) {
+          // In case of an error (e.g., circular reference), store a null or a placeholder string
+          console.error('Error stringifying JSON:', e);
+          return null; // Or a placeholder string like '{}' or '[]'
+        }
+      default:
+        // For any type not explicitly handled, return the value as is
+        return value;
     }
-    return value
   }
 
   // Instance method to get a clean object for output
   cleanObject<T extends Model>(object: T): T {
+    const constructor = this.constructor as typeof Model;
+    for (const key in object) {
+      if (Object.prototype.hasOwnProperty.call(object, key)) {
+        // Get the type of cast from the casts object using the key
+        const castType = constructor.casts[key];
+        if (castType) {
+          // Apply casting to the attribute value
+          object[key] = constructor.castAttribute(castType, object[key]);
+        } // No else needed as we copy as-is only if there's a cast rule
+      }
+    }
+
     // @ts-expect-error
     delete object.clauses
     return object
@@ -161,12 +181,16 @@ export class Model {
     const values = fields.map(field => this[field])
     let sql
 
-    // Cast attributes for storage
-    const valuesForStorage = values.map((value, index) => {
-      return this.prepareAttributeForStorage(fields[index], value)
-    })
-
     const constructor = this.constructor as typeof Model
+
+    // Cast attributes for storage
+    const valuesForStorage = fields.map(field => {
+      // Retrieve the type of cast for the field from the casts object
+      const castType = constructor.casts[field as keyof Casts];
+      // Prepare the value for storage based on its cast type
+      return constructor.prepareAttributeForStorage(field as keyof Casts, this[field]);
+    });
+
 
     if (this.id) {
       // Update
@@ -295,17 +319,17 @@ export class Model {
     data.createdAt = data.createdAt || now
     data.updatedAt = data.updatedAt || now
 
-    const fields = Object.keys(data).join(', ')
-    const placeholders = Object.keys(data).map(() => '?').join(', ')
-    const values = Object.values(data)
+    const fields = Object.keys(data);
+    const placeholders = fields.map(() => '?').join(', ');
+    const values = fields.map(field => data[field]);
 
     // Cast attributes for storage
-    const valuesForStorage = values.map((value, index) => {
-      return this.prototype.prepareAttributeForStorage(Object.keys(data)[index], value)
-    })
+    const valuesForStorage = fields.map(field => {
+      return this.prepareAttributeForStorage(field as keyof Casts, data[field]);
+    });
 
-    const sql = `INSERT INTO ${this.tableName} (${fields}) VALUES (${placeholders})`
-    return await this.executeSql(sql, valuesForStorage)
+    const sql = `INSERT INTO ${this.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+    return await this.executeSql(sql, valuesForStorage);
   }
 
   static async seed (data: Array<Record<string, any>>) {
