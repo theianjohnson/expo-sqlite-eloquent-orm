@@ -242,16 +242,18 @@ export class Model {
     }
 
     // Execute the SQL query
+    console.log('Before executeSql');
     const result = await constructor.executeSql(query, params)
 
     // Map the result rows to clean instances of the model
+    console.log(`Creating instances of ${this.constructor.name} from query result.`);
     const instances = result.rows._array.map(row => {
       const instance = new constructor(row)
       return this.cleanObject(instance) // Use the new method here
     })
 
     // Load relationships if any are specified
-    // console.log(`Loading ${this.constructor.name}.${this.clauses.withRelations}`);
+    console.log(`Loading ${this.constructor.name}.${this.clauses.withRelations}`);
     for (const relationName of this.clauses.withRelations) {
       const relation = this[relationName]
       if (typeof relation === 'function') {

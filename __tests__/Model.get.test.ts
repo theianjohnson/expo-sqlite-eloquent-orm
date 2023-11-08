@@ -1,6 +1,4 @@
-// Model.get.test.js
-jest.mock('expo-sqlite'); // This tells Jest to use our mock implementation of expo-sqlite
-import { Model } from '../src/Model'; // Import your model (the path might be different)
+import { Model } from '../src/Model';
 
 // Assuming that Model is a generic class that can be extended by specific models
 class Person extends Model {
@@ -31,7 +29,7 @@ describe('Model get method', () => {
   test('should apply where clause when provided', async () => {
     const person = await Person.where('name', '=', 'Nora').first();
     expect(person).toBeDefined();
-    expect(person.name).toBe('Nora');
+    expect(person!.name).toBe('Nora');
   });
 
   test('should return null when no matching records are found', async () => {
@@ -43,8 +41,8 @@ describe('Model get method', () => {
     // This assumes your mock and Model class can handle multiple where clauses
     const person = await Person.where('name', '=', 'Nora').where('group_id', '=', 1).first();
     expect(person).toBeDefined();
-    expect(person.name).toBe('Nora');
-    expect(person.group_id).toBe(1);
+    expect(person!.name).toBe('Nora');
+    expect(person!.group_id).toBe(1);
   });
 
   // Add more tests as needed to cover the functionality you want to ensure works correctly

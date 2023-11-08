@@ -4,11 +4,13 @@
     "module": "commonjs",
     "lib": ["es6", "dom"],
     "declaration": true,
+    "rootDir": "./src",
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
