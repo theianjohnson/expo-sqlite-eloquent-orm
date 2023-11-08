@@ -22,14 +22,6 @@ interface SQLResult {
   }
 }
 
-interface StaticModel {
-  new(attributes?: ModelAttributes): Model
-  db: any
-  tableName: string
-  casts: Casts
-  executeSql: (sql: string, params?: any[]) => Promise<SQLResult>
-}
-
 export class Model {
   static db = SQLite.openDatabase('app.db')
   static tableName = ''
@@ -49,6 +41,127 @@ export class Model {
       withRelations: []
     }
   }
+
+    // Static methods that proxy to instance methods
+    static async get (): Promise<Model[]> {
+      return await new this().get()
+    }
+  
+    static select<T extends Model>(this: new () => T, fields: string | string[] = '*'): T {
+      return new this().select(fields)
+    }
+  
+    static where<T extends Model>(this: new () => T, column: string, operatorOrValue: any, value?: any): T {
+      return new this().where(column, operatorOrValue, value)
+    }
+  
+    static orderBy<T extends Model>(this: new () => T, column: string, direction: 'ASC' | 'DESC' = 'ASC'): T {
+      return new this().orderBy(column, direction)
+    }
+  
+    static limit<T extends Model>(this: new () => T, number: number): T {
+      return new this().limit(number)
+    }
+  
+    static with<T extends Model>(this: new () => T, relation: string): T {
+      const instance = new this().with(relation)
+      return instance
+    }
+
+    static async find (id: number | string): Promise<Model | null> {
+      return await new this().where('id', '=', id).first()
+    }
+  
+    static async insert (data: Record<string, any>): Promise<SQLResult> {
+      const now = new Date().toISOString()
+      // Add createdAt and updatedAt to the data if not provided
+      data.createdAt = data.createdAt || now
+      data.updatedAt = data.updatedAt || now
+  
+      const fields = Object.keys(data);
+      const placeholders = fields.map(() => '?').join(', ');
+      const values = fields.map(field => data[field]);
+  
+      // Cast attributes for storage
+      const valuesForStorage = fields.map(field => {
+        return this.prepareAttributeForStorage(field as keyof Casts, data[field]);
+      });
+  
+      const sql = `INSERT INTO ${this.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+      return await this.executeSql(sql, valuesForStorage);
+    }
+  
+    static async seed (data: Array<Record<string, any>>) {
+      // Check if the table already has data
+      const existingData = await new this().first()
+      if (!existingData) {
+        for (const item of data) {
+          await this.insert(item)
+        }
+      }
+    }
+  
+    static async executeSql (sql: string, params: any[] = []): Promise<SQLResult> {
+      return await new Promise((resolve, reject) => {
+        this.db.transaction(tx => {
+          tx.executeSql(sql, params, (_, result) => {
+            resolve(result)
+            // @ts-expect-error
+          }, (transaction, error) => {
+            reject(error)
+          })
+        })
+      })
+    }
+  
+    // Cast an attribute to the specified type
+    static castAttribute(key: keyof Casts, value: any): any {
+      switch (key) {
+        case 'number':
+          return Number(value);
+        case 'boolean':
+          return Boolean(value);
+        case 'string':
+          return String(value);
+        case 'json':
+          try {
+            return JSON.parse(value);
+          } catch (e) {
+            return value;
+          }
+        // Add other types as needed
+        default:
+          return value;
+      }
+    }
+  
+    static prepareAttributeForStorage(key: keyof Casts, value: any): any {
+      const castType = this.casts[key];
+      
+      switch (castType) {
+        case 'number':
+          // Ensure that numbers are finite before storing, otherwise store as null
+          return isFinite(value) ? Number(value) : null;
+        case 'boolean':
+          // Convert boolean to a format that SQLite understands (1 for true, 0 for false)
+          return value ? 1 : 0;
+        case 'string':
+          // Ensure that the value is a string
+          return String(value);
+        case 'json':
+          // Stringify JSON objects
+          try {
+            return JSON.stringify(value);
+          } catch (e) {
+            // In case of an error (e.g., circular reference), store a null or a placeholder string
+            // console.error('Error stringifying JSON:', e);
+            return null; // Or a placeholder string like '{}' or '[]'
+          }
+        default:
+          // For any type not explicitly handled, return the value as is
+          return value;
+      }
+    }
 
   // Instance methods for query building
   select (fields: string | string[] = '*'): this {
@@ -78,100 +191,6 @@ export class Model {
   with (relation: string): this {
     this.clauses.withRelations.push(relation)
     return this
-  }
-
-  // Static methods that proxy to instance methods
-  static async get (): Promise<Model[]> {
-    return await new this().get()
-  }
-
-  static select<T extends Model>(this: new () => T, fields: string | string[] = '*'): T {
-    return new this().select(fields)
-  }
-
-  static where<T extends Model>(this: new () => T, column: string, operatorOrValue: any, value?: any): T {
-    return new this().where(column, operatorOrValue, value)
-  }
-
-  static orderBy<T extends Model>(this: new () => T, column: string, direction: 'ASC' | 'DESC' = 'ASC'): T {
-    return new this().orderBy(column, direction)
-  }
-
-  static limit<T extends Model>(this: new () => T, number: number): T {
-    return new this().limit(number)
-  }
-
-  static with<T extends Model>(this: new () => T, relation: string): T {
-    const instance = new this().with(relation)
-    return instance
-  }
-
-  // Cast an attribute to the specified type
-  static castAttribute(key: keyof Casts, value: any): any {
-    switch (key) {
-      case 'number':
-        return Number(value);
-      case 'boolean':
-        return Boolean(value);
-      case 'string':
-        return String(value);
-      case 'json':
-        try {
-          return JSON.parse(value);
-        } catch (e) {
-          return value;
-        }
-      // Add other types as needed
-      default:
-        return value;
-    }
-  }
-
-  static prepareAttributeForStorage(key: keyof Casts, value: any): any {
-    const castType = this.casts[key];
-    
-    switch (castType) {
-      case 'number':
-        // Ensure that numbers are finite before storing, otherwise store as null
-        return isFinite(value) ? Number(value) : null;
-      case 'boolean':
-        // Convert boolean to a format that SQLite understands (1 for true, 0 for false)
-        return value ? 1 : 0;
-      case 'string':
-        // Ensure that the value is a string
-        return String(value);
-      case 'json':
-        // Stringify JSON objects
-        try {
-          return JSON.stringify(value);
-        } catch (e) {
-          // In case of an error (e.g., circular reference), store a null or a placeholder string
-          console.error('Error stringifying JSON:', e);
-          return null; // Or a placeholder string like '{}' or '[]'
-        }
-      default:
-        // For any type not explicitly handled, return the value as is
-        return value;
-    }
-  }
-
-  // Instance method to get a clean object for output
-  cleanObject<T extends Model>(object: T): T {
-    const constructor = this.constructor as typeof Model;
-    for (const key in object) {
-      if (Object.prototype.hasOwnProperty.call(object, key)) {
-        // Get the type of cast from the casts object using the key
-        const castType = constructor.casts[key];
-        if (castType) {
-          // Apply casting to the attribute value
-          object[key] = constructor.castAttribute(castType, object[key]);
-        } // No else needed as we copy as-is only if there's a cast rule
-      }
-    }
-
-    // @ts-expect-error
-    delete object.clauses
-    return object
   }
 
   // Instance methods
@@ -224,19 +243,6 @@ export class Model {
 
     const sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`
     return await constructor.executeSql(sql, [this.id])
-  }
-
-  static async executeSql (sql: string, params: any[] = []): Promise<SQLResult> {
-    return await new Promise((resolve, reject) => {
-      this.db.transaction(tx => {
-        tx.executeSql(sql, params, (_, result) => {
-          resolve(result)
-          // @ts-expect-error
-        }, (transaction, error) => {
-          reject(error)
-        })
-      })
-    })
   }
 
   async get (): Promise<Model[]> {
@@ -309,37 +315,22 @@ export class Model {
     return await this.save()
   }
 
-  static async find (id: number | string): Promise<Model | null> {
-    return await new this().where('id', '=', id).first()
-  }
-
-  static async insert (data: Record<string, any>): Promise<SQLResult> {
-    const now = new Date().toISOString()
-    // Add createdAt and updatedAt to the data if not provided
-    data.createdAt = data.createdAt || now
-    data.updatedAt = data.updatedAt || now
-
-    const fields = Object.keys(data);
-    const placeholders = fields.map(() => '?').join(', ');
-    const values = fields.map(field => data[field]);
-
-    // Cast attributes for storage
-    const valuesForStorage = fields.map(field => {
-      return this.prepareAttributeForStorage(field as keyof Casts, data[field]);
-    });
-
-    const sql = `INSERT INTO ${this.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
-    return await this.executeSql(sql, valuesForStorage);
-  }
-
-  static async seed (data: Array<Record<string, any>>) {
-    // Check if the table already has data
-    const existingData = await new this().first()
-    if (!existingData) {
-      for (const item of data) {
-        await this.insert(item)
+  cleanObject<T extends Model>(object: T): T {
+    const constructor = this.constructor as typeof Model;
+    for (const key in object) {
+      if (Object.prototype.hasOwnProperty.call(object, key)) {
+        // Get the type of cast from the casts object using the key
+        const castType = constructor.casts[key];
+        if (castType) {
+          // Apply casting to the attribute value
+          object[key] = constructor.castAttribute(castType, object[key]);
+        } // No else needed as we copy as-is only if there's a cast rule
       }
     }
+
+    // @ts-expect-error
+    delete object.clauses
+    return object
   }
 
   // Relationship methods
