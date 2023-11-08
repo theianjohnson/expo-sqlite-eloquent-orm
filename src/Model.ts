@@ -56,12 +56,12 @@ export class Model {
     return this
   }
 
-  where (column: string, operator: string, value?: any): this {
+  where (column: string, operatorOrValue: any, value?: any): this {
     if (value === undefined) {
-      value = operator
-      operator = '='
+      this.clauses.where.push({ column, operator: '=', value: operatorOrValue })
+    } else {
+      this.clauses.where.push({ column, operator: operatorOrValue, value })
     }
-    this.clauses.where.push({ column, operator, value })
     return this
   }
 
@@ -89,8 +89,8 @@ export class Model {
     return new this().select(fields)
   }
 
-  static where<T extends Model>(this: new () => T, column: string, operator: string, value?: any): T {
-    return new this().where(column, operator, value)
+  static where<T extends Model>(this: new () => T, column: string, operatorOrValue: any, value?: any): T {
+    return new this().where(column, operatorOrValue, value)
   }
 
   static orderBy<T extends Model>(this: new () => T, column: string, direction: 'ASC' | 'DESC' = 'ASC'): T {
@@ -103,7 +103,6 @@ export class Model {
 
   static with<T extends Model>(this: new () => T, relation: string): T {
     const instance = new this().with(relation)
-    console.log(instance.constructor.name, 'with', relation) // Check what the instance looks like
     return instance
   }
 
@@ -242,7 +241,6 @@ export class Model {
     }
 
     // Execute the SQL query
-    console.log('Before executeSql');
     const result = await constructor.executeSql(query, params)
 
     // Map the result rows to clean instances of the model
@@ -277,7 +275,6 @@ export class Model {
   }
 
   async first (): Promise<Model | null> {
-    // console.log('first', this.constructor.name);
     this.limit(1)
     const results = await this.get()
     return results[0] || null
