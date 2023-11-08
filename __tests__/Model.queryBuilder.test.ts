@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
 

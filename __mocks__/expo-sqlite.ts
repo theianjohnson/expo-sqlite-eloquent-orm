@@ -1,19 +1,9 @@
+// @ts-nocheck
+import { mock } from 'node:test';
+import { mockDataStore } from './mockDataStore';
+
 const mockTransaction = jest.fn();
 const mockExecuteSql = jest.fn();
-
-// This is a simple in-memory store to simulate the database.
-let mockDataStore = {
-  people: [
-    { id: 1, name: 'Nora', group_id: 1 },
-    { id: 2, name: 'Alice', group_id: 2 },
-    { id: 3, name: 'Bob', group_id: 3 }
-  ],
-  groups: [
-    { id: 1, name: 'Family' },
-    { id: 2, name: 'Friends' },
-    { id: 3, name: 'Coworkers' }
-  ]
-};
 
 const SQLite = {
   openDatabase: jest.fn().mockReturnValue({
@@ -26,10 +16,21 @@ const SQLite = {
 };
 
 function findTableInSql(sql) {
-  if (sql.includes('FROM people')) return 'people';
-  if (sql.includes('FROM groups')) return 'groups';
+  const selectMatch = sql.match(/FROM (\w+)/i);
+  if (selectMatch) return selectMatch[1];
+
+  const insertMatch = sql.match(/INTO (\w+)/i);
+  if (insertMatch) return insertMatch[1];
+
+  const updateMatch = sql.match(/UPDATE (\w+)/i);
+  if (updateMatch) return updateMatch[1];
+
+  const deleteMatch = sql.match(/FROM (\w+)/i); // DELETE queries also use FROM
+  if (deleteMatch) return deleteMatch[1];
+
   return null;
 }
+
 
 function parseWhereClause(sql, params) {
   // This is a very naive implementation of WHERE clause parsing.
@@ -61,38 +62,51 @@ mockExecuteSql.mockImplementation((sql, params, success, failure) => {
           rowsAffected: 0,
         });
       } else if (upperSql.startsWith('INSERT')) {
+        const columnsMatch = sql.match(/\((.*?)\)/);
+        if (!columnsMatch) throw new Error('No columns found for INSERT');
+        const columns = columnsMatch[1].split(',').map(column => column.trim());
+  
         const newId = mockDataStore[table].length + 1;
-        const newRow = { id: newId, ...params[0] }; // Assuming params[0] is an object of column values.
+        const newRow = { id: newId };
+        columns.forEach((column, index) => {
+          newRow[column] = params[index];
+        });
+  
         mockDataStore[table].push(newRow);
-
         success(undefined, { insertId: newId, rowsAffected: 1 });
       } else if (upperSql.startsWith('UPDATE')) {
         const matchRow = parseWhereClause(sql, params);
         const setClauseMatch = sql.match(/SET (.+?) WHERE/i);
         if (!setClauseMatch) throw new Error('No SET clause found');
-        const setClauses = setClauseMatch[1].split(',').map((clause) => clause.trim().split('='));
-        
+        const setClauses = setClauseMatch[1].split(',').map(clause => {
+          const [column, valuePlaceholder] = clause.trim().split('=');
+          const valueIndex = parseInt(valuePlaceholder.replace('?', '').trim()) - 1;
+          return { column: column.trim(), value: params[valueIndex] };
+        });
+  
+        let rowsAffected = 0;
         mockDataStore[table].forEach((row) => {
           if (matchRow(row)) {
-            setClauses.forEach(([column, valuePlaceholder]) => {
-              const valueIndex = parseInt(valuePlaceholder.match(/\$(\d+)/)[1], 10) - 1;
-              row[column] = params[valueIndex];
+            setClauses.forEach(({ column, value }) => {
+              row[column] = value;
             });
+            rowsAffected++;
           }
         });
-
-        success(undefined, { rowsAffected: 1 }); // Simplified to always affect one row.
+  
+        success(undefined, { rowsAffected });
       } else if (upperSql.startsWith('DELETE')) {
         const matchRow = parseWhereClause(sql, params);
         const initialLength = mockDataStore[table].length;
         mockDataStore[table] = mockDataStore[table].filter((row) => !matchRow(row));
         const rowsAffected = initialLength - mockDataStore[table].length;
-
+  
         success(undefined, { rowsAffected });
       } else {
         throw new Error('Unhandled SQL statement');
       }
     } catch (e) {
+      console.error(e);
       reject(undefined, e);
     }
 })
