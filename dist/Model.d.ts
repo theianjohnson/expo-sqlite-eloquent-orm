@@ -32,13 +32,13 @@ export declare class Model {
     [key: string]: any;
     constructor(attributes?: ModelAttributes);
     select(fields?: string | string[]): this;
-    where(column: string, operator: string, value?: any): this;
+    where(column: string, operatorOrValue: any, value?: any): this;
     orderBy(column: string, direction?: 'ASC' | 'DESC'): this;
     limit(number: number): this;
     with(relation: string): this;
     static get(): Promise<Model[]>;
     static select<T extends Model>(this: new () => T, fields?: string | string[]): T;
-    static where<T extends Model>(this: new () => T, column: string, operator: string, value?: any): T;
+    static where<T extends Model>(this: new () => T, column: string, operatorOrValue: any, value?: any): T;
     static orderBy<T extends Model>(this: new () => T, column: string, direction?: 'ASC' | 'DESC'): T;
     static limit<T extends Model>(this: new () => T, number: number): T;
     static with<T extends Model>(this: new () => T, relation: string): T;

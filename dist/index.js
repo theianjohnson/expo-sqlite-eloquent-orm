@@ -6,3 +6,4 @@ Object.defineProperty(exports, "Model", { enumerable: true, get: function () { r
 const Migration_1 = require("./Migration");
 Object.defineProperty(exports, "Migration", { enumerable: true, get: function () { return Migration_1.Migration; } });
 Object.defineProperty(exports, "runMigrations", { enumerable: true, get: function () { return Migration_1.runMigrations; } });
+//# sourceMappingURL=index.js.map

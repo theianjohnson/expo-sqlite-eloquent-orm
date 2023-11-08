@@ -50,12 +50,13 @@ class Model {
         this.clauses.select = Array.isArray(fields) ? fields.join(', ') : fields;
         return this;
     }
-    where(column, operator, value) {
+    where(column, operatorOrValue, value) {
         if (value === undefined) {
-            value = operator;
-            operator = '=';
+            this.clauses.where.push({ column, operator: '=', value: operatorOrValue });
         }
-        this.clauses.where.push({ column, operator, value });
+        else {
+            this.clauses.where.push({ column, operator: operatorOrValue, value });
+        }
         return this;
     }
     orderBy(column, direction = 'ASC') {
@@ -79,8 +80,8 @@ class Model {
     static select(fields = '*') {
         return new this().select(fields);
     }
-    static where(column, operator, value) {
-        return new this().where(column, operator, value);
+    static where(column, operatorOrValue, value) {
+        return new this().where(column, operatorOrValue, value);
     }
     static orderBy(column, direction = 'ASC') {
         return new this().orderBy(column, direction);
@@ -90,7 +91,6 @@ class Model {
     }
     static with(relation) {
         const instance = new this().with(relation);
-        console.log(instance.constructor.name, 'with', relation); // Check what the instance looks like
         return instance;
     }
     // Cast an attribute to the specified type
@@ -219,12 +219,13 @@ class Model {
             // Execute the SQL query
             const result = yield constructor.executeSql(query, params);
             // Map the result rows to clean instances of the model
+            console.log(`Creating instances of ${this.constructor.name} from query result.`);
             const instances = result.rows._array.map(row => {
                 const instance = new constructor(row);
                 return this.cleanObject(instance); // Use the new method here
             });
             // Load relationships if any are specified
-            // console.log(`Loading ${this.constructor.name}.${this.clauses.withRelations}`);
+            console.log(`Loading ${this.constructor.name}.${this.clauses.withRelations}`);
             for (const relationName of this.clauses.withRelations) {
                 const relation = this[relationName];
                 if (typeof relation === 'function') {
@@ -248,7 +249,6 @@ class Model {
     }
     first() {
         return __awaiter(this, void 0, void 0, function* () {
-            // console.log('first', this.constructor.name);
             this.limit(1);
             const results = yield this.get();
             return results[0] || null;
@@ -314,3 +314,4 @@ exports.Model = Model;
 Model.db = SQLite.openDatabase('app.db');
 Model.tableName = '';
 Model.casts = {};
+//# sourceMappingURL=Model.js.map

@@ -66,3 +66,4 @@ function runMigrations(migrations) {
     });
 }
 exports.runMigrations = runMigrations;
+//# sourceMappingURL=Migration.js.map
