@@ -43,15 +43,16 @@ const migrations = {
 
 // Seed data
 const groupSeedData = [
-  { name: 'Coworkers' },
-  { name: 'Family' },
-  { name: 'Friends' },
+  { id: 1, name: 'Family' },
+  { id: 2, name: 'Friends' },
+  { id: 3, name: 'Coworkers' }
 ];
 
 const peopleSeedData = [
-  { name: 'Nora', groupId: 1 },
-  { name: 'Bob', groupId: 2 },
-  { name: 'Charlie', groupId: 1 },
+  { id: 1, name: 'Nora', groupId: 1 },
+  { id: 2, name: 'Alice', groupId: 2 },
+  { id: 3, name: 'Bob', groupId: 2 },
+  { id: 4, name: 'Ellie', groupId: 1 }
 ];
 
 export default function App() {
@@ -76,7 +77,7 @@ export default function App() {
       console.log('People', people);
 
       const person = await Person.find(1);
-      await person.update({name: 'Nora II'});
+      // await person.update({name: 'Nora II'});
       setPerson(person);
       console.log('Person', person);
     })();
