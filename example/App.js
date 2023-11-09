@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
-import { Model, runMigrations } from './local-version-of-expo-sqlite-eloquent-orm';
+import { Model, Migration } from './local-version-of-expo-sqlite-eloquent-orm';
 
 // Define some models
 class Group extends Model {
@@ -64,13 +64,14 @@ export default function App() {
   // Run migrations and seed data
   useEffect(() => {
     (async() => {
-      await runMigrations(migrations);
+      await Migration.runMigrations(migrations);
       await Group.seed(groupSeedData);
       await Person.seed(peopleSeedData);
 
       const groups = await Group.with('people').get();
       setGroups(groups);
       console.log('App.js groups', groups);
+      console.log('App.js groups[0].people()', groups[0].people());
 
       const people = await Person.with('group').get();
       setPeople(people);

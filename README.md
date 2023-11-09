@@ -125,7 +125,7 @@ class User extends Model {
   // ...
   
   async profile() {
-    return this.hasOne(Profile, 'user_id');
+    return this.hasOne(Profile, 'userId');
   }
 }
 
@@ -134,7 +134,9 @@ class Profile extends Model {
 }
 
 const user = await User.find(1);
-const userProfile = await user.profile();
+
+// Automatically loaded
+const userProfile = user.profile;
 ```
 
 ### One-to-Many Relationship
@@ -146,7 +148,7 @@ class User extends Model {
   // ...
   
   async posts() {
-    return this.hasMany(Post, 'user_id');
+    return this.hasMany(Post, 'userId');
   }
 }
 
@@ -155,7 +157,9 @@ class Post extends Model {
 }
 
 const user = await User.find(1);
-const userPosts = await user.posts();
+
+// Automatically loaded
+const userPosts = user.posts;
 ```
 
 ### Many-to-One Relationship
@@ -167,7 +171,7 @@ class Post extends Model {
   // ...
   
   async user() {
-    return this.belongsTo(User, 'user_id');
+    return this.belongsTo(User, 'userId');
   }
 }
 
@@ -192,24 +196,22 @@ import { Migration } from 'expo-sqlite-eloquent-orm';
 
 // Define your migration scripts
 const migrations = {
-  '1.0.0': `
+  '1699486848_init': `
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT,
       email TEXT
     );
   `,
-  '1.1.0': `
+  '1699486885_updating_users_table': `
     ALTER TABLE users ADD COLUMN active BOOLEAN;
   `,
 };
 
 // Run migrations
-Migration.runMigrations(migrations)
-  .then(() => {
-    console.log('Migrations completed successfully.');
-  })
-  .catch((error) => {
-    console.error('Error running migrations:', error);
-  });
+try { 
+  await Migration.runMigrations(migrations);
+} catch(error) {
+  onsole.error('Error running migrations:', error);
+}
 ```

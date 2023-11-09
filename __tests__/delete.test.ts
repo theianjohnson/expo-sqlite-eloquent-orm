@@ -23,4 +23,17 @@ describe('delete', () => {
     await person.delete();
     expect(mockDataStore.people.some(p => p.id === 1)).toBe(false);
   });
+
+  it('should delete a record with the given condition', async () => {
+    const deleteResult = await MockPerson.where('age', '=', 30).delete();
+    expect(deleteResult.rowsAffected).toBe(1);
+    expect(mockDataStore.people.some(p => p.age === 30)).toBe(false);
+  });
+
+  it('should not delete any records if the condition does not match', async () => {
+    const initialCount = mockDataStore.people.length;
+    const deleteResult = await MockPerson.where('age', '=', 100).delete();
+    expect(deleteResult.rowsAffected).toBe(0);
+    expect(mockDataStore.people.length).toBe(initialCount);
+  });
 });

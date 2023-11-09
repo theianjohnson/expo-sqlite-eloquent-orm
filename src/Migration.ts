@@ -37,13 +37,3 @@ export class Migration {
     console.log(`Migration ${version} applied.`)
   }
 }
-
-// Exported async function to run migrations
-export async function runMigrations (migrations: Migrations): Promise<void> {
-  try {
-    await Migration.runMigrations(migrations)
-    console.log('Running migrations complete.')
-  } catch (error) {
-    console.error('Error running migrations:', error)
-  }
-}

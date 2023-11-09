@@ -234,15 +234,30 @@ export class Model {
     return result
   }
 
-  async delete () {
-    const constructor = this.constructor as typeof Model
-
-    if (!this.id) {
-      throw new Error('Cannot delete a model without an id.')
+  async delete(): Promise<SQLResult> {
+    const constructor = this.constructor as typeof Model;
+  
+    let sql;
+    const params: any[] = [];
+  
+    // If there are WHERE clauses, use them to build the query
+    if (this.clauses?.where?.length > 0) {
+      const whereConditions = this.clauses.where.map(clause => {
+        params.push(clause.value);
+        return `${clause.column} ${clause.operator} ?`;
+      });
+      sql = `DELETE FROM ${constructor.tableName} WHERE ${whereConditions.join(' AND ')}`;
+    } else if (this.id) {
+      // If no WHERE clause but an id is present, delete by id
+      sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`;
+      params.push(this.id);
+    } else {
+      // If neither WHERE clause nor id is present, throw an error
+      throw new Error('Delete operation must specify a WHERE condition or an instance with id.');
     }
-
-    const sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`
-    return await constructor.executeSql(sql, [this.id])
+  
+    // Execute the delete SQL statement
+    return await constructor.executeSql(sql, params);
   }
 
   async get (): Promise<Model[]> {

@@ -45,6 +45,123 @@ class Model {
             withRelations: []
         };
     }
+    // Static methods that proxy to instance methods
+    static get() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield new this().get();
+        });
+    }
+    static select(fields = '*') {
+        return new this().select(fields);
+    }
+    static where(column, operatorOrValue, value) {
+        return new this().where(column, operatorOrValue, value);
+    }
+    static orderBy(column, direction = 'ASC') {
+        return new this().orderBy(column, direction);
+    }
+    static limit(number) {
+        return new this().limit(number);
+    }
+    static with(relation) {
+        const instance = new this().with(relation);
+        return instance;
+    }
+    static find(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield new this().where('id', '=', id).first();
+        });
+    }
+    static insert(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const now = new Date().toISOString();
+            // Add createdAt and updatedAt to the data if not provided
+            data.createdAt = data.createdAt || now;
+            data.updatedAt = data.updatedAt || now;
+            const fields = Object.keys(data);
+            const placeholders = fields.map(() => '?').join(', ');
+            const values = fields.map(field => data[field]);
+            // Cast attributes for storage
+            const valuesForStorage = fields.map(field => {
+                return this.prepareAttributeForStorage(field, data[field]);
+            });
+            const sql = `INSERT INTO ${this.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+            return yield this.executeSql(sql, valuesForStorage);
+        });
+    }
+    static seed(data) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Check if the table already has data
+            const existingData = yield new this().first();
+            if (!existingData) {
+                for (const item of data) {
+                    yield this.insert(item);
+                }
+            }
+        });
+    }
+    static executeSql(sql, params = []) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield new Promise((resolve, reject) => {
+                this.db.transaction(tx => {
+                    tx.executeSql(sql, params, (_, result) => {
+                        resolve(result);
+                        // @ts-expect-error
+                    }, (transaction, error) => {
+                        reject(error);
+                    });
+                });
+            });
+        });
+    }
+    // Cast an attribute to the specified type
+    static castAttribute(key, value) {
+        switch (key) {
+            case 'number':
+                return Number(value);
+            case 'boolean':
+                return Boolean(value);
+            case 'string':
+                return String(value);
+            case 'json':
+                try {
+                    return JSON.parse(value);
+                }
+                catch (e) {
+                    return value;
+                }
+            // Add other types as needed
+            default:
+                return value;
+        }
+    }
+    static prepareAttributeForStorage(key, value) {
+        const castType = this.casts[key];
+        switch (castType) {
+            case 'number':
+                // Ensure that numbers are finite before storing, otherwise store as null
+                return isFinite(value) ? Number(value) : null;
+            case 'boolean':
+                // Convert boolean to a format that SQLite understands (1 for true, 0 for false)
+                return value ? 1 : 0;
+            case 'string':
+                // Ensure that the value is a string
+                return String(value);
+            case 'json':
+                // Stringify JSON objects
+                try {
+                    return JSON.stringify(value);
+                }
+                catch (e) {
+                    // In case of an error (e.g., circular reference), store a null or a placeholder string
+                    // console.error('Error stringifying JSON:', e);
+                    return null; // Or a placeholder string like '{}' or '[]'
+                }
+            default:
+                // For any type not explicitly handled, return the value as is
+                return value;
+        }
+    }
     // Instance methods for query building
     select(fields = '*') {
         this.clauses.select = Array.isArray(fields) ? fields.join(', ') : fields;
@@ -71,72 +188,6 @@ class Model {
         this.clauses.withRelations.push(relation);
         return this;
     }
-    // Static methods that proxy to instance methods
-    static get() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield new this().get();
-        });
-    }
-    static select(fields = '*') {
-        return new this().select(fields);
-    }
-    static where(column, operatorOrValue, value) {
-        return new this().where(column, operatorOrValue, value);
-    }
-    static orderBy(column, direction = 'ASC') {
-        return new this().orderBy(column, direction);
-    }
-    static limit(number) {
-        return new this().limit(number);
-    }
-    static with(relation) {
-        const instance = new this().with(relation);
-        return instance;
-    }
-    // Cast an attribute to the specified type
-    castAttribute(key, value) {
-        const castType = this.constructor.casts[key];
-        if (castType) {
-            switch (castType) {
-                case 'number':
-                    return Number(value);
-                case 'boolean':
-                    return Boolean(value);
-                case 'string':
-                    return String(value);
-                case 'json':
-                    try {
-                        return JSON.parse(value);
-                    }
-                    catch (e) {
-                        return value;
-                    }
-                // Add other types as needed
-                default:
-                    return value;
-            }
-        }
-        return value;
-    }
-    prepareAttributeForStorage(key, value) {
-        const castType = this.constructor.casts[key];
-        if (castType) {
-            switch (castType) {
-                case 'json':
-                    return JSON.stringify(value);
-                // Add other types as needed
-                default:
-                    return value;
-            }
-        }
-        return value;
-    }
-    // Instance method to get a clean object for output
-    cleanObject(object) {
-        // @ts-expect-error
-        delete object.clauses;
-        return object;
-    }
     // Instance methods
     save() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -144,11 +195,14 @@ class Model {
             const fields = Object.keys(this).filter(key => key !== 'id' && key !== 'createdAt' && key !== 'updatedAt');
             const values = fields.map(field => this[field]);
             let sql;
-            // Cast attributes for storage
-            const valuesForStorage = values.map((value, index) => {
-                return this.prepareAttributeForStorage(fields[index], value);
-            });
             const constructor = this.constructor;
+            // Cast attributes for storage
+            const valuesForStorage = fields.map(field => {
+                // Retrieve the type of cast for the field from the casts object
+                const castType = constructor.casts[field];
+                // Prepare the value for storage based on its cast type
+                return constructor.prepareAttributeForStorage(field, this[field]);
+            });
             if (this.id) {
                 // Update
                 fields.push('updatedAt');
@@ -179,20 +233,6 @@ class Model {
             }
             const sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`;
             return yield constructor.executeSql(sql, [this.id]);
-        });
-    }
-    static executeSql(sql, params = []) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield new Promise((resolve, reject) => {
-                this.db.transaction(tx => {
-                    tx.executeSql(sql, params, (_, result) => {
-                        resolve(result);
-                        // @ts-expect-error
-                    }, (transaction, error) => {
-                        reject(error);
-                    });
-                });
-            });
         });
     }
     get() {
@@ -260,38 +300,21 @@ class Model {
             return yield this.save();
         });
     }
-    static find(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return yield new this().where('id', '=', id).first();
-        });
-    }
-    static insert(data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const now = new Date().toISOString();
-            // Add createdAt and updatedAt to the data if not provided
-            data.createdAt = data.createdAt || now;
-            data.updatedAt = data.updatedAt || now;
-            const fields = Object.keys(data).join(', ');
-            const placeholders = Object.keys(data).map(() => '?').join(', ');
-            const values = Object.values(data);
-            // Cast attributes for storage
-            const valuesForStorage = values.map((value, index) => {
-                return this.prototype.prepareAttributeForStorage(Object.keys(data)[index], value);
-            });
-            const sql = `INSERT INTO ${this.tableName} (${fields}) VALUES (${placeholders})`;
-            return yield this.executeSql(sql, valuesForStorage);
-        });
-    }
-    static seed(data) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // Check if the table already has data
-            const existingData = yield new this().first();
-            if (!existingData) {
-                for (const item of data) {
-                    yield this.insert(item);
-                }
+    cleanObject(object) {
+        const constructor = this.constructor;
+        for (const key in object) {
+            if (Object.prototype.hasOwnProperty.call(object, key)) {
+                // Get the type of cast from the casts object using the key
+                const castType = constructor.casts[key];
+                if (castType) {
+                    // Apply casting to the attribute value
+                    object[key] = constructor.castAttribute(castType, object[key]);
+                } // No else needed as we copy as-is only if there's a cast rule
             }
-        });
+        }
+        // @ts-expect-error
+        delete object.clauses;
+        return object;
     }
     // Relationship methods
     hasOne(relatedModel, foreignKey, localKey = 'id') {
