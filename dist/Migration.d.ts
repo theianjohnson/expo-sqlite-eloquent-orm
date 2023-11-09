@@ -5,5 +5,4 @@ export declare class Migration {
     static checkMigration(version: string): Promise<boolean>;
     static applyMigration(version: string, sql: string): Promise<void>;
 }
-export declare function runMigrations(migrations: Migrations): Promise<void>;
 export {};

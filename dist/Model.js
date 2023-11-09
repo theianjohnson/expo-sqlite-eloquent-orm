@@ -226,13 +226,30 @@ class Model {
         });
     }
     delete() {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function* () {
             const constructor = this.constructor;
-            if (!this.id) {
-                throw new Error('Cannot delete a model without an id.');
+            let sql;
+            const params = [];
+            // If there are WHERE clauses, use them to build the query
+            if (((_b = (_a = this.clauses) === null || _a === void 0 ? void 0 : _a.where) === null || _b === void 0 ? void 0 : _b.length) > 0) {
+                const whereConditions = this.clauses.where.map(clause => {
+                    params.push(clause.value);
+                    return `${clause.column} ${clause.operator} ?`;
+                });
+                sql = `DELETE FROM ${constructor.tableName} WHERE ${whereConditions.join(' AND ')}`;
             }
-            const sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`;
-            return yield constructor.executeSql(sql, [this.id]);
+            else if (this.id) {
+                // If no WHERE clause but an id is present, delete by id
+                sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`;
+                params.push(this.id);
+            }
+            else {
+                // If neither WHERE clause nor id is present, throw an error
+                throw new Error('Delete operation must specify a WHERE condition or an instance with id.');
+            }
+            // Execute the delete SQL statement
+            return yield constructor.executeSql(sql, params);
         });
     }
     get() {

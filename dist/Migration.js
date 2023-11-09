@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.runMigrations = exports.Migration = void 0;
+exports.Migration = void 0;
 const Model_1 = require("./Model");
 class Migration {
     static runMigrations(migrations) {
@@ -53,17 +53,4 @@ class Migration {
     }
 }
 exports.Migration = Migration;
-// Exported async function to run migrations
-function runMigrations(migrations) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            yield Migration.runMigrations(migrations);
-            console.log('Running migrations complete.');
-        }
-        catch (error) {
-            console.error('Error running migrations:', error);
-        }
-    });
-}
-exports.runMigrations = runMigrations;
 //# sourceMappingURL=Migration.js.map
