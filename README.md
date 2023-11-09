@@ -20,11 +20,47 @@ npm install expo-sqlite-eloquent-orm
 yarn add expo-sqlite-eloquent-orm
 ```
 
+## Example
+
+* git clone
+* cd expo-sqlite-eloquent-orm/example
+* npm run start
+* See https://github.com/theianjohnson/expo-sqlite-eloquent-orm/blob/main/example/App.js
+
 ## Quick Start
 
 To get started with `expo-sqlite-eloquent-orm`, you'll need to define your models and perform basic CRUD operations.
 
-See https://github.com/theianjohnson/expo-sqlite-eloquent-orm/blob/main/example/App.js
+### Running Migrations
+
+`expo-sqlite-eloquent-orm` provides a migration system to manage your database schema and versioning. You can define migrations to create and modify tables in a structured manner.
+
+To run migrations, you need to create migration files and then execute them. You can use the `Migration` class to handle migrations. Here's an example of how to create and run migrations:
+
+```javascript
+import { Migration } from 'expo-sqlite-eloquent-orm';
+
+// Define your migration scripts
+const migrations = {
+  '1699486848_init': `
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      email TEXT
+    );
+  `,
+  '1699486885_updating_users_table': `
+    ALTER TABLE users ADD COLUMN active BOOLEAN;
+  `,
+};
+
+// Run migrations
+try { 
+  await Migration.runMigrations(migrations);
+} catch(error) {
+  console.error('Error running migrations:', error);
+}
+```
 
 ### Defining Models
 
@@ -180,38 +216,7 @@ class User extends Model {
 }
 
 const post = await Post.find(1);
-const postUser = await post.user();
+
+// Automatically loaded
+const postUser = await post.user;
 ````
-
-## Migrations
-
-`expo-sqlite-eloquent-orm` provides a migration system to manage your database schema and versioning. You can define migrations to create and modify tables in a structured manner.
-
-### Running Migrations
-
-To run migrations, you need to create migration files and then execute them. You can use the `Migration` class to handle migrations. Here's an example of how to create and run migrations:
-
-```javascript
-import { Migration } from 'expo-sqlite-eloquent-orm';
-
-// Define your migration scripts
-const migrations = {
-  '1699486848_init': `
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      email TEXT
-    );
-  `,
-  '1699486885_updating_users_table': `
-    ALTER TABLE users ADD COLUMN active BOOLEAN;
-  `,
-};
-
-// Run migrations
-try { 
-  await Migration.runMigrations(migrations);
-} catch(error) {
-  onsole.error('Error running migrations:', error);
-}
-```
