@@ -75,9 +75,12 @@ class Model {
     static insert(data) {
         return __awaiter(this, void 0, void 0, function* () {
             const now = new Date().toISOString();
+            const constructor = this;
             // Add createdAt and updatedAt to the data if not provided
-            data.createdAt = data.createdAt || now;
-            data.updatedAt = data.updatedAt || now;
+            if (constructor.withTimestamps) {
+                data[constructor.createdAtColumn] = data[constructor.createdAtColumn] || now;
+                data[constructor.updatedAtColumn] = data[constructor.updatedAtColumn] || now;
+            }
             const fields = Object.keys(data);
             const placeholders = fields.map(() => '?').join(', ');
             const values = fields.map(field => data[field]);
@@ -85,7 +88,7 @@ class Model {
             const valuesForStorage = fields.map(field => {
                 return this.prepareAttributeForStorage(field, data[field]);
             });
-            const sql = `INSERT INTO ${this.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+            const sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
             return yield this.executeSql(sql, valuesForStorage);
         });
     }
@@ -191,34 +194,43 @@ class Model {
     // Instance methods
     save() {
         return __awaiter(this, void 0, void 0, function* () {
-            const now = new Date().toISOString();
-            const fields = Object.keys(this).filter(key => key !== 'id' && key !== 'createdAt' && key !== 'updatedAt');
-            const values = fields.map(field => this[field]);
-            let sql;
             const constructor = this.constructor;
+            const now = new Date().toISOString();
+            const fields = Object.keys(this).filter(key => key !== 'id');
+            let sql;
             // Cast attributes for storage
-            const valuesForStorage = fields.map(field => {
-                // Retrieve the type of cast for the field from the casts object
-                const castType = constructor.casts[field];
+            const values = fields.map(field => {
                 // Prepare the value for storage based on its cast type
                 return constructor.prepareAttributeForStorage(field, this[field]);
             });
             if (this.id) {
-                // Update
-                fields.push('updatedAt');
-                valuesForStorage.push(now);
+                if (constructor.withTimestamps && constructor.updatedAtColumn) {
+                    this[constructor.updatedAtColumn] = now;
+                    fields.push(constructor.updatedAtColumn);
+                    values.push(now);
+                }
                 const setClause = fields.map(field => `${field} = ?`).join(', ');
                 sql = `UPDATE ${constructor.tableName} SET ${setClause} WHERE id = ?`;
-                valuesForStorage.push(this.id);
+                values.push(this.id);
             }
             else {
                 // Insert
-                fields.push('createdAt', 'updatedAt');
-                valuesForStorage.push(now, now);
+                if (constructor.withTimestamps) {
+                    if (constructor.createdAtColumn) {
+                        this[constructor.createdAtColumn] = now;
+                        fields.push(constructor.createdAtColumn);
+                        values.push(now);
+                    }
+                    if (constructor.updatedAtColumn) {
+                        this[constructor.updatedAtColumn] = now;
+                        fields.push(constructor.updatedAtColumn);
+                        values.push(now);
+                    }
+                }
                 const placeholders = fields.map(() => '?').join(', ');
                 sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
             }
-            const result = yield constructor.executeSql(sql, valuesForStorage);
+            const result = yield constructor.executeSql(sql, values);
             if (!this.id && result.insertId) {
                 this.id = result.insertId;
             }
@@ -354,4 +366,7 @@ exports.Model = Model;
 Model.db = SQLite.openDatabase('app.db');
 Model.tableName = '';
 Model.casts = {};
+Model.withTimestamps = true;
+Model.createdAtColumn = 'createdAt';
+Model.updatedAtColumn = 'updatedAt';
 //# sourceMappingURL=Model.js.map

@@ -28,6 +28,9 @@ export declare class Model {
     static db: SQLite.SQLiteDatabase;
     static tableName: string;
     static casts: Casts;
+    static withTimestamps: boolean;
+    static createdAtColumn: string;
+    static updatedAtColumn: string;
     clauses: Clauses;
     [key: string]: any;
     constructor(attributes?: ModelAttributes);

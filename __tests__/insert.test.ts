@@ -3,7 +3,13 @@ import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
 import { mockDataStore } from '../__mocks__/mockDataStore';
 
+const originalMockDataStore = {...mockDataStore};
+
 describe('insert', () => {
+  beforeEach(() => {
+    mockDataStore = {...originalMockDataStore};
+  });
+
   it('should create a new person and save', async () => {
     const newPerson = new MockPerson({ name: 'John', groupId: 1 });
     const expectedInsertId = mockDataStore.people.length + 1;

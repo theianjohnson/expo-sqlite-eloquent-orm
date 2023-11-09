@@ -6,6 +6,7 @@ import { Model, Migration } from './local-version-of-expo-sqlite-eloquent-orm';
 // Define some models
 class Group extends Model {
   static tableName = 'groups';
+  static withTimestamps = false;
 
   people() {
     return this.hasMany(Person, 'groupId');
@@ -25,8 +26,6 @@ const migrations = {
   '1699142747_init_groups': `
     CREATE TABLE IF NOT EXISTS groups (
       id INTEGER PRIMARY KEY NOT NULL,
-      createdAt TEXT NOT NULL,
-      updatedAt TEXT NOT NULL,
       name TEXT
     );
   `,
@@ -71,7 +70,7 @@ export default function App() {
       const groups = await Group.with('people').get();
       setGroups(groups);
       console.log('App.js groups', groups);
-      console.log('App.js groups[0].people()', groups[0].people());
+      console.log('App.js groups[0].people()', groups[0].people);
 
       const people = await Person.with('group').get();
       setPeople(people);

@@ -3,7 +3,13 @@ import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
 import { mockDataStore } from '../__mocks__/mockDataStore';
 
+const originalMockDataStore = {...mockDataStore};
+
 describe('update', () => {
+  beforeEach(() => {
+    mockDataStore = {...originalMockDataStore};
+  });
+
   it('should update a record with the given attributes', async () => {
     const modelInstance = await MockPerson.where('name', 'Nora').first();
     const updatedAttributes = { name: 'Eleanor' };

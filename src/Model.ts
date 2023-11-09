@@ -24,8 +24,14 @@ interface SQLResult {
 
 export class Model {
   static db = SQLite.openDatabase('app.db')
+  
   static tableName = ''
+
   static casts: Casts = {}
+
+  static withTimestamps: boolean = true;
+  static createdAtColumn: string = 'createdAt';
+  static updatedAtColumn: string = 'updatedAt';
 
   clauses: Clauses;
 
@@ -74,9 +80,14 @@ export class Model {
   
     static async insert (data: Record<string, any>): Promise<SQLResult> {
       const now = new Date().toISOString()
+
+      const constructor = this as typeof Model;
+
       // Add createdAt and updatedAt to the data if not provided
-      data.createdAt = data.createdAt || now
-      data.updatedAt = data.updatedAt || now
+      if (constructor.withTimestamps) {
+        data[constructor.createdAtColumn] = data[constructor.createdAtColumn] || now;
+        data[constructor.updatedAtColumn] = data[constructor.updatedAtColumn] || now;
+      }
   
       const fields = Object.keys(data);
       const placeholders = fields.map(() => '?').join(', ');
@@ -87,7 +98,7 @@ export class Model {
         return this.prepareAttributeForStorage(field as keyof Casts, data[field]);
       });
   
-      const sql = `INSERT INTO ${this.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+      const sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
       return await this.executeSql(sql, valuesForStorage);
     }
   
@@ -194,40 +205,48 @@ export class Model {
   }
 
   // Instance methods
-  async save (): Promise<SQLResult> {
+  async save(): Promise<SQLResult> {
+    const constructor = this.constructor as typeof Model;
     const now = new Date().toISOString()
-    const fields = Object.keys(this).filter(key => key !== 'id' && key !== 'createdAt' && key !== 'updatedAt')
-    const values = fields.map(field => this[field])
+    const fields = Object.keys(this).filter(key => key !== 'id')
     let sql
 
-    const constructor = this.constructor as typeof Model
-
     // Cast attributes for storage
-    const valuesForStorage = fields.map(field => {
-      // Retrieve the type of cast for the field from the casts object
-      const castType = constructor.casts[field as keyof Casts];
+    const values = fields.map(field => {
       // Prepare the value for storage based on its cast type
       return constructor.prepareAttributeForStorage(field as keyof Casts, this[field]);
     });
 
 
     if (this.id) {
-      // Update
-      fields.push('updatedAt')
-      valuesForStorage.push(now)
+      if (constructor.withTimestamps && constructor.updatedAtColumn) {
+        this[constructor.updatedAtColumn] = now;
+        fields.push(constructor.updatedAtColumn);
+        values.push(now);
+      }
 
       const setClause = fields.map(field => `${field} = ?`).join(', ')
       sql = `UPDATE ${constructor.tableName} SET ${setClause} WHERE id = ?`
-      valuesForStorage.push(this.id)
+      values.push(this.id)
     } else {
       // Insert
-      fields.push('createdAt', 'updatedAt')
-      valuesForStorage.push(now, now)
+      if (constructor.withTimestamps) {
+        if (constructor.createdAtColumn) {
+          this[constructor.createdAtColumn] = now;
+          fields.push(constructor.createdAtColumn);
+          values.push(now);
+        }
+        if (constructor.updatedAtColumn) {
+          this[constructor.updatedAtColumn] = now;
+          fields.push(constructor.updatedAtColumn);
+          values.push(now);
+        }
+      }
 
       const placeholders = fields.map(() => '?').join(', ')
       sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`
     }
-    const result = await constructor.executeSql(sql, valuesForStorage)
+    const result = await constructor.executeSql(sql, values)
     if (!this.id && result.insertId) {
       this.id = result.insertId
     }

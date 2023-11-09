@@ -1,8 +1,7 @@
 import { Model } from './Model'
-import { Migration, runMigrations } from './Migration'
+import { Migration } from './Migration'
 
 export {
   Model,
-  Migration,
-  runMigrations
+  Migration
 }

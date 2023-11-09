@@ -24,8 +24,14 @@ interface SQLResult {
 
 export class Model {
   static db = SQLite.openDatabase('app.db')
+  
   static tableName = ''
+
   static casts: Casts = {}
+
+  static withTimestamps: boolean = true;
+  static createdAtColumn: string = 'createdAt';
+  static updatedAtColumn: string = 'updatedAt';
 
   clauses: Clauses;
 
@@ -74,9 +80,14 @@ export class Model {
   
     static async insert (data: Record<string, any>): Promise<SQLResult> {
       const now = new Date().toISOString()
+
+      const constructor = this as typeof Model;
+
       // Add createdAt and updatedAt to the data if not provided
-      data.createdAt = data.createdAt || now
-      data.updatedAt = data.updatedAt || now
+      if (constructor.withTimestamps) {
+        data[constructor.createdAtColumn] = data[constructor.createdAtColumn] || now;
+        data[constructor.updatedAtColumn] = data[constructor.updatedAtColumn] || now;
+      }
   
       const fields = Object.keys(data);
       const placeholders = fields.map(() => '?').join(', ');
@@ -87,7 +98,7 @@ export class Model {
         return this.prepareAttributeForStorage(field as keyof Casts, data[field]);
       });
   
-      const sql = `INSERT INTO ${this.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+      const sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
       return await this.executeSql(sql, valuesForStorage);
     }
   
@@ -195,15 +206,13 @@ export class Model {
 
   // Instance methods
   async save (): Promise<SQLResult> {
+    const constructor = this.constructor as typeof Model;
     const now = new Date().toISOString()
-    const fields = Object.keys(this).filter(key => key !== 'id' && key !== 'createdAt' && key !== 'updatedAt')
-    const values = fields.map(field => this[field])
+    const fields = Object.keys(this).filter(key => key !== 'id')
     let sql
 
-    const constructor = this.constructor as typeof Model
-
     // Cast attributes for storage
-    const valuesForStorage = fields.map(field => {
+    const values = fields.map(field => {
       // Retrieve the type of cast for the field from the casts object
       const castType = constructor.casts[field as keyof Casts];
       // Prepare the value for storage based on its cast type
@@ -212,37 +221,61 @@ export class Model {
 
 
     if (this.id) {
-      // Update
-      fields.push('updatedAt')
-      valuesForStorage.push(now)
+      if (constructor.withTimestamps && constructor.updatedAtColumn) {
+        fields.push(constructor.updatedAtColumn);
+        values.push(now);
+      }
 
       const setClause = fields.map(field => `${field} = ?`).join(', ')
       sql = `UPDATE ${constructor.tableName} SET ${setClause} WHERE id = ?`
-      valuesForStorage.push(this.id)
+      values.push(this.id)
     } else {
       // Insert
-      fields.push('createdAt', 'updatedAt')
-      valuesForStorage.push(now, now)
+      if (constructor.withTimestamps) {
+        if (constructor.createdAtColumn) {
+          fields.push(constructor.createdAtColumn);
+          values.push(now);
+        }
+        if (constructor.updatedAtColumn) {
+          fields.push(constructor.updatedAtColumn);
+          values.push(now);
+        }
+      }
 
       const placeholders = fields.map(() => '?').join(', ')
       sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`
     }
-    const result = await constructor.executeSql(sql, valuesForStorage)
+    const result = await constructor.executeSql(sql, values)
     if (!this.id && result.insertId) {
       this.id = result.insertId
     }
     return result
   }
 
-  async delete () {
-    const constructor = this.constructor as typeof Model
-
-    if (!this.id) {
-      throw new Error('Cannot delete a model without an id.')
+  async delete(): Promise<SQLResult> {
+    const constructor = this.constructor as typeof Model;
+  
+    let sql;
+    const params: any[] = [];
+  
+    // If there are WHERE clauses, use them to build the query
+    if (this.clauses?.where?.length > 0) {
+      const whereConditions = this.clauses.where.map(clause => {
+        params.push(clause.value);
+        return `${clause.column} ${clause.operator} ?`;
+      });
+      sql = `DELETE FROM ${constructor.tableName} WHERE ${whereConditions.join(' AND ')}`;
+    } else if (this.id) {
+      // If no WHERE clause but an id is present, delete by id
+      sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`;
+      params.push(this.id);
+    } else {
+      // If neither WHERE clause nor id is present, throw an error
+      throw new Error('Delete operation must specify a WHERE condition or an instance with id.');
     }
-
-    const sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`
-    return await constructor.executeSql(sql, [this.id])
+  
+    // Execute the delete SQL statement
+    return await constructor.executeSql(sql, params);
   }
 
   async get (): Promise<Model[]> {

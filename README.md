@@ -20,16 +20,16 @@ npm install expo-sqlite-eloquent-orm
 yarn add expo-sqlite-eloquent-orm
 ```
 
-## Example
+## Run the Example App
 
-* git clone
+* git clone expo-sqlite-eloquent-orm
 * cd expo-sqlite-eloquent-orm/example
 * npm run start
-* See https://github.com/theianjohnson/expo-sqlite-eloquent-orm/blob/main/example/App.js
+* Example code is all in the App.js file, https://github.com/theianjohnson/expo-sqlite-eloquent-orm/blob/main/example/App.js
 
 ## Quick Start
 
-To get started with `expo-sqlite-eloquent-orm`, you'll need to define your models and perform basic CRUD operations.
+To get started with `expo-sqlite-eloquent-orm`, you'll need to setup your initial migrations and define your models.
 
 ### Running Migrations
 
@@ -220,3 +220,9 @@ const post = await Post.find(1);
 // Automatically loaded
 const postUser = await post.user;
 ````
+
+## To Do
+[] Many-to-many relationships
+[] whereRaw
+[] Bulk eager loading, currently eager loading is n+1
+[] Reactivity? Caching with automatic invalidation?

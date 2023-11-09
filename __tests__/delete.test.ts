@@ -7,7 +7,6 @@ const originalMockDataStore = {...mockDataStore};
 
 describe('delete', () => {
   beforeEach(() => {
-    // Reset the mockDataStore to a known state before each test
     mockDataStore = {...originalMockDataStore};
   });
 
