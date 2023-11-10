@@ -1,13 +1,11 @@
 // @ts-nocheck
 import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
-import { mockDataStore } from '../__mocks__/mockDataStore';
-
-const originalMockDataStore = {...mockDataStore};
+import { mockDataStore, resetMockDataStore } from '../__mocks__/mockDataStore';
 
 describe('withTimestamps', () => {
   beforeEach(() => {
-    mockDataStore = {...originalMockDataStore};
+    resetMockDataStore()
   });
 
   it('should set createdAt and updatedAt on insert when withTimestamps is true', async () => {
@@ -41,7 +39,7 @@ describe('withTimestamps', () => {
 
 describe('withTimestamps custom columns', () => {
   beforeEach(() => {
-    mockDataStore = {...originalMockDataStore};
+    resetMockDataStore()
   });
 
   it('should set custom createdAt and updatedAt on insert when withTimestamps is true', async () => {
@@ -84,7 +82,7 @@ describe('withTimestamps custom columns', () => {
 
 describe('withoutTimestamps', () => {
   beforeEach(() => {
-    mockDataStore = {...originalMockDataStore};
+    resetMockDataStore()
   });
 
   it('should not set timestamps on insert when withTimestamps is false', async () => {

@@ -4,6 +4,12 @@ type Casts = Record<string, 'number' | 'boolean' | 'string' | 'json'>
 
 interface Clauses {
   select: string
+  joins: Array<{
+    type: 'INNER' | 'LEFT' | 'RIGHT',
+    table: string,
+    firstKey: string,
+    secondKey: string
+  }>
   where: Array<{ column: string, operator: string, value?: any }>
   orderBy: { column: string, direction: string } | null
   limit: number | null
@@ -41,6 +47,7 @@ export class Model {
     Object.assign(this, attributes)
     this.clauses = {
       select: '*',
+      joins: [],
       where: [],
       orderBy: null,
       limit: null,
@@ -53,8 +60,16 @@ export class Model {
       return await new this().get()
     }
   
+    static table<T extends Model>(this: new () => T, name: string): T {
+      return new this().table(name)
+    }
+
     static select<T extends Model>(this: new () => T, fields: string | string[] = '*'): T {
       return new this().select(fields)
+    }
+
+    static join<T extends Model>(this: new () => T, type: 'INNER' | 'LEFT' | 'RIGHT', table: string, firstKey: string, secondKey: string): T {
+      return new this().join(type, table, firstKey, secondKey);
     }
   
     static where<T extends Model>(this: new () => T, column: string, operatorOrValue: any, value?: any): T {
@@ -175,9 +190,19 @@ export class Model {
     }
 
   // Instance methods for query building
-  select (fields: string | string[] = '*'): this {
+  table(name: string): this {
+    this.tableName = name;
+    return this
+  }
+
+  select(fields: string | string[] = '*'): this {
     this.clauses.select = Array.isArray(fields) ? fields.join(', ') : fields
     return this
+  }
+
+  join(type: 'INNER' | 'LEFT' | 'RIGHT', table: string, firstKey: string, secondKey: string): this {
+    this.clauses.joins.push({ type, table, firstKey, secondKey });
+    return this;
   }
 
   where (column: string, operatorOrValue: any, value?: any): this {
@@ -279,11 +304,19 @@ export class Model {
     return await constructor.executeSql(sql, params);
   }
 
-  async get (): Promise<Model[]> {
+  getSql (): { query: string, params: Array<string | number | boolean | null> } {
     const constructor = this.constructor as typeof Model
 
     let query = `SELECT ${this.clauses.select} FROM ${constructor.tableName}`
     const params: Array<string | number | boolean | null> = []
+
+    // Add JOIN clauses if any
+    if (this.clauses.joins.length > 0) {
+      const joinClauses = this.clauses.joins.map(joinClause => {
+        return `${joinClause.type} JOIN ${joinClause.table} ON ${joinClause.firstKey} = ${joinClause.secondKey}`;
+      }).join(' ');
+      query += ` ${joinClauses}`;
+    }
 
     // Add WHERE clauses if any
     if (this.clauses.where.length > 0) {
@@ -303,6 +336,14 @@ export class Model {
     if (this.clauses.limit !== null) {
       query += ` LIMIT ${this.clauses.limit}`
     }
+
+    return { query, params };
+  }
+
+  async get (): Promise<Model[]> {
+    const constructor = this.constructor as typeof Model
+
+    const { query, params } = this.getSql();
 
     // Execute the SQL query
     const result = await constructor.executeSql(query, params)
@@ -379,4 +420,43 @@ export class Model {
   async belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey: string = 'id'): Promise<Model | null> {
     return await relatedModel.where(otherKey, '=', this[foreignKey]).first()
   }
+
+  async belongsToMany<T extends Model>(
+    this: T,
+    relatedModel: T,
+    joinTableName?: string, // This can be optional if the default naming convention is to be used
+    foreignKey?: string,   // This can be optional and inferred from the table names
+    otherKey?: string      // This can be optional and inferred from the table names
+  ): Promise<Model[]> {
+
+    const constructor = this.constructor as typeof Model;
+
+    // Determine the table names
+    const relatedTableName = relatedModel.tableName;
+    const currentTableName = constructor.tableName;
+  
+    // If joinTableName is not provided, determine it based on the table names
+    if (!joinTableName) {
+      [joinTableName] = [relatedTableName, currentTableName].sort().join('_');
+    }
+  
+    // Determine foreign keys if not provided
+    if (!foreignKey) {
+      foreignKey = `${currentTableName.slice(0, -1)}Id`; // Assuming the singular form of the table name plus 'Id'
+    }
+    if (!otherKey) {
+      otherKey = `${relatedTableName.slice(0, -1)}Id`; // Assuming the singular form of the table name plus 'Id'
+    }
+  
+    // Use the ORM's methods to construct the query
+    const instances = await constructor
+      .join('INNER', joinTableName, `${currentTableName}.id`, `${joinTableName}.${foreignKey}`)
+      .join('INNER', relatedTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`)
+      .where(`${currentTableName}.id`, '=', this.id) // Add a where clause to filter by the current model's id
+      .get();
+  
+    // Instantiate the related models with the result
+    return instances;
+  }
+  
 }

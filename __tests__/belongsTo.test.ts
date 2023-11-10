@@ -1,32 +1,36 @@
 // @ts-nocheck
 import { MockPerson } from '../__mocks__/MockPerson';
-import { MockGroup } from '../__mocks__/MockGroup';
-import { mockDataStore } from '../__mocks__/mockDataStore';
+import { MockLocation } from '../__mocks__/MockLocation';
+import { mockDataStore, resetMockDataStore } from '../__mocks__/mockDataStore';
 
 describe('belongsTo', () => {
-  it('should retrieve related group using belongsTo relationship', async () => {
+  beforeEach(() => {
+    resetMockDataStore();
+  });
+
+  it('should retrieve related location using belongsTo relationship', async () => {
     // Retrieve a person from the data store
     const mockPerson = new MockPerson(mockDataStore.people[0]);
 
-    // Retrieve the related group using belongsTo
-    const relatedGroup = await mockPerson.belongsTo(MockGroup, 'groupId');
+    // Retrieve the related location using belongsTo
+    const relatedLocation = await mockPerson.belongsTo(MockLocation, 'locationId');
 
-    // Find the expected group from the data store
-    const expectedGroup = mockDataStore.groups.find(group => group.id === mockPerson.groupId);
+    // Find the expected location from the data store
+    const expectedLocation = mockDataStore.locations.find(location => location.id === mockPerson.locationId);
 
-    // Check if the relatedGroup matches the expectedGroup
-    expect(relatedGroup).toEqual(expectedGroup);
+    // Check if the relatedLocation matches the expectedLocation
+    expect(relatedLocation).toEqual(expectedLocation);
   });
 
-  it('should return null if no related group found', async () => {
-    // Create a mock person without a related group
+  it('should return null if no related location found', async () => {
+    // Create a mock person without a related location
     const mockPerson = new MockPerson(mockDataStore.people[0]);
-    mockPerson.groupId = 999;
+    mockPerson.locationId = 999;
 
-    // Retrieve the related group using belongsTo
-    const relatedGroup = await mockPerson.belongsTo(MockGroup, 'groupId');
+    // Retrieve the related location using belongsTo
+    const relatedLocation = await mockPerson.belongsTo(MockLocation, 'locationId');
 
-    // Check if relatedGroup is null
-    expect(relatedGroup).toBeNull();
+    // Check if relatedLocation is null
+    expect(relatedLocation).toBeNull();
   });
 });

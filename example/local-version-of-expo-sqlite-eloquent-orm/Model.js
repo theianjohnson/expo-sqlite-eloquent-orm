@@ -1,6 +1,10 @@
 "use strict";
 
 function _typeof(o) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) { return typeof o; } : function (o) { return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o; }, _typeof(o); }
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
 function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
@@ -80,6 +84,7 @@ var Model = /*#__PURE__*/function () {
     Object.assign(this, attributes);
     this.clauses = {
       select: '*',
+      joins: [],
       where: [],
       orderBy: null,
       limit: null,
@@ -94,6 +99,17 @@ var Model = /*#__PURE__*/function () {
     function select() {
       var fields = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '*';
       this.clauses.select = Array.isArray(fields) ? fields.join(', ') : fields;
+      return this;
+    }
+  }, {
+    key: "join",
+    value: function join(type, table, firstKey, secondKey) {
+      this.clauses.joins.push({
+        type: type,
+        table: table,
+        firstKey: firstKey,
+        secondKey: secondKey
+      });
       return this;
     }
   }, {
@@ -248,43 +264,60 @@ var Model = /*#__PURE__*/function () {
       }));
     }
   }, {
+    key: "getSql",
+    value: function getSql() {
+      var constructor = this.constructor;
+      var query = "SELECT ".concat(this.clauses.select, " FROM ").concat(constructor.tableName);
+      var params = [];
+      // Add JOIN clauses if any
+      if (this.clauses.joins.length > 0) {
+        var joinClauses = this.clauses.joins.map(function (joinClause) {
+          return "".concat(joinClause.type, " JOIN ").concat(joinClause.table, " ON ").concat(joinClause.firstKey, " = ").concat(joinClause.secondKey);
+        }).join(' ');
+        query += " ".concat(joinClauses);
+      }
+      // Add WHERE clauses if any
+      if (this.clauses.where.length > 0) {
+        var whereClauses = this.clauses.where.map(function (clause) {
+          params.push(clause.value);
+          return "".concat(clause.column, " ").concat(clause.operator, " ?");
+        }).join(' AND ');
+        query += " WHERE ".concat(whereClauses);
+      }
+      // Add ORDER BY clause if set
+      if (this.clauses.orderBy) {
+        query += " ORDER BY ".concat(this.clauses.orderBy.column, " ").concat(this.clauses.orderBy.direction);
+      }
+      // Add LIMIT clause if set
+      if (this.clauses.limit !== null) {
+        query += " LIMIT ".concat(this.clauses.limit);
+      }
+      return {
+        query: query,
+        params: params
+      };
+    }
+  }, {
     key: "get",
     value: function get() {
       return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
         var _this2 = this;
-        var constructor, query, params, whereClauses, result, instances, _iterator, _step, _loop;
+        var constructor, _this$getSql, query, params, result, instances, _iterator, _step, _loop;
         return _regeneratorRuntime().wrap(function _callee4$(_context5) {
           while (1) switch (_context5.prev = _context5.next) {
             case 0:
               constructor = this.constructor;
-              query = "SELECT ".concat(this.clauses.select, " FROM ").concat(constructor.tableName);
-              params = []; // Add WHERE clauses if any
-              if (this.clauses.where.length > 0) {
-                whereClauses = this.clauses.where.map(function (clause) {
-                  params.push(clause.value);
-                  return "".concat(clause.column, " ").concat(clause.operator, " ?");
-                }).join(' AND ');
-                query += " WHERE ".concat(whereClauses);
-              }
-              // Add ORDER BY clause if set
-              if (this.clauses.orderBy) {
-                query += " ORDER BY ".concat(this.clauses.orderBy.column, " ").concat(this.clauses.orderBy.direction);
-              }
-              // Add LIMIT clause if set
-              if (this.clauses.limit !== null) {
-                query += " LIMIT ".concat(this.clauses.limit);
-              }
-              // Execute the SQL query
-              _context5.next = 8;
+              _this$getSql = this.getSql(), query = _this$getSql.query, params = _this$getSql.params; // Execute the SQL query
+              _context5.next = 4;
               return constructor.executeSql(query, params);
-            case 8:
+            case 4:
               result = _context5.sent;
               instances = result.rows._array.map(function (row) {
                 var instance = new constructor(row);
                 return _this2.cleanObject(instance); // Use the new method here
               }); // Load relationships if any are specified
               _iterator = _createForOfIteratorHelper(this.clauses.withRelations);
-              _context5.prev = 11;
+              _context5.prev = 7;
               _loop = /*#__PURE__*/_regeneratorRuntime().mark(function _loop() {
                 var relationName, relation;
                 return _regeneratorRuntime().wrap(function _loop$(_context4) {
@@ -327,35 +360,35 @@ var Model = /*#__PURE__*/function () {
                 }, _loop);
               });
               _iterator.s();
-            case 14:
+            case 10:
               if ((_step = _iterator.n()).done) {
-                _context5.next = 18;
+                _context5.next = 14;
                 break;
               }
-              return _context5.delegateYield(_loop(), "t0", 16);
+              return _context5.delegateYield(_loop(), "t0", 12);
+            case 12:
+              _context5.next = 10;
+              break;
+            case 14:
+              _context5.next = 19;
+              break;
             case 16:
-              _context5.next = 14;
-              break;
-            case 18:
-              _context5.next = 23;
-              break;
-            case 20:
-              _context5.prev = 20;
-              _context5.t1 = _context5["catch"](11);
+              _context5.prev = 16;
+              _context5.t1 = _context5["catch"](7);
               _iterator.e(_context5.t1);
-            case 23:
-              _context5.prev = 23;
+            case 19:
+              _context5.prev = 19;
               _iterator.f();
-              return _context5.finish(23);
-            case 26:
+              return _context5.finish(19);
+            case 22:
               // Reset the clauses for the next query
               this.cleanObject(this);
               return _context5.abrupt("return", instances);
-            case 28:
+            case 24:
             case "end":
               return _context5.stop();
           }
-        }, _callee4, this, [[11, 20, 23, 26]]);
+        }, _callee4, this, [[7, 16, 19, 22]]);
       }));
     }
   }, {
@@ -474,22 +507,65 @@ var Model = /*#__PURE__*/function () {
         }, _callee9, this);
       }));
     }
-  }], [{
-    key: "get",
-    value: function get() {
+  }, {
+    key: "belongsToMany",
+    value: function belongsToMany(relatedModel, joinTableName,
+    // This can be optional if the default naming convention is to be used
+    foreignKey,
+    // This can be optional and inferred from the table names
+    otherKey // This can be optional and inferred from the table names
+    ) {
       return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee10() {
+        var constructor, relatedTableName, currentTableName, _sort$join, _sort$join2, instances;
         return _regeneratorRuntime().wrap(function _callee10$(_context11) {
           while (1) switch (_context11.prev = _context11.next) {
             case 0:
-              _context11.next = 2;
-              return new this().get();
-            case 2:
-              return _context11.abrupt("return", _context11.sent);
-            case 3:
+              constructor = this.constructor; // Determine the table names
+              relatedTableName = relatedModel.tableName;
+              currentTableName = constructor.tableName; // If joinTableName is not provided, determine it based on the table names
+              if (!joinTableName) {
+                _sort$join = [relatedTableName, currentTableName].sort().join('_');
+                _sort$join2 = _slicedToArray(_sort$join, 1);
+                joinTableName = _sort$join2[0];
+              }
+              // Determine foreign keys if not provided
+              if (!foreignKey) {
+                foreignKey = "".concat(currentTableName.slice(0, -1), "Id"); // Assuming the singular form of the table name plus 'Id'
+              }
+
+              if (!otherKey) {
+                otherKey = "".concat(relatedTableName.slice(0, -1), "Id"); // Assuming the singular form of the table name plus 'Id'
+              }
+              // Use the ORM's methods to construct the query
+              _context11.next = 8;
+              return constructor.join('INNER', joinTableName, "".concat(currentTableName, ".id"), "".concat(joinTableName, ".").concat(foreignKey)).join('INNER', relatedTableName, "".concat(joinTableName, ".").concat(otherKey), "".concat(relatedTableName, ".id")).where("".concat(currentTableName, ".id"), '=', this.id) // Add a where clause to filter by the current model's id
+              .get();
+            case 8:
+              instances = _context11.sent;
+              return _context11.abrupt("return", instances);
+            case 10:
             case "end":
               return _context11.stop();
           }
         }, _callee10, this);
+      }));
+    }
+  }], [{
+    key: "get",
+    value: function get() {
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee11() {
+        return _regeneratorRuntime().wrap(function _callee11$(_context12) {
+          while (1) switch (_context12.prev = _context12.next) {
+            case 0:
+              _context12.next = 2;
+              return new this().get();
+            case 2:
+              return _context12.abrupt("return", _context12.sent);
+            case 3:
+            case "end":
+              return _context12.stop();
+          }
+        }, _callee11, this);
       }));
     }
   }, {
@@ -497,6 +573,11 @@ var Model = /*#__PURE__*/function () {
     value: function select() {
       var fields = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '*';
       return new this().select(fields);
+    }
+  }, {
+    key: "join",
+    value: function join(type, table, firstKey, secondKey) {
+      return new this().join(type, table, firstKey, secondKey);
     }
   }, {
     key: "where",
@@ -523,29 +604,29 @@ var Model = /*#__PURE__*/function () {
   }, {
     key: "find",
     value: function find(id) {
-      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee11() {
-        return _regeneratorRuntime().wrap(function _callee11$(_context12) {
-          while (1) switch (_context12.prev = _context12.next) {
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee12() {
+        return _regeneratorRuntime().wrap(function _callee12$(_context13) {
+          while (1) switch (_context13.prev = _context13.next) {
             case 0:
-              _context12.next = 2;
+              _context13.next = 2;
               return new this().where('id', '=', id).first();
             case 2:
-              return _context12.abrupt("return", _context12.sent);
+              return _context13.abrupt("return", _context13.sent);
             case 3:
             case "end":
-              return _context12.stop();
+              return _context13.stop();
           }
-        }, _callee11, this);
+        }, _callee12, this);
       }));
     }
   }, {
     key: "insert",
     value: function insert(data) {
-      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee12() {
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee13() {
         var _this3 = this;
         var now, constructor, fields, placeholders, values, valuesForStorage, sql;
-        return _regeneratorRuntime().wrap(function _callee12$(_context13) {
-          while (1) switch (_context13.prev = _context13.next) {
+        return _regeneratorRuntime().wrap(function _callee13$(_context14) {
+          while (1) switch (_context14.prev = _context14.next) {
             case 0:
               now = new Date().toISOString();
               constructor = this; // Add createdAt and updatedAt to the data if not provided
@@ -564,75 +645,75 @@ var Model = /*#__PURE__*/function () {
                 return _this3.prepareAttributeForStorage(field, data[field]);
               });
               sql = "INSERT INTO ".concat(constructor.tableName, " (").concat(fields.join(', '), ") VALUES (").concat(placeholders, ")");
-              _context13.next = 10;
+              _context14.next = 10;
               return this.executeSql(sql, valuesForStorage);
             case 10:
-              return _context13.abrupt("return", _context13.sent);
+              return _context14.abrupt("return", _context14.sent);
             case 11:
             case "end":
-              return _context13.stop();
+              return _context14.stop();
           }
-        }, _callee12, this);
+        }, _callee13, this);
       }));
     }
   }, {
     key: "seed",
     value: function seed(data) {
-      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee13() {
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee14() {
         var existingData, _iterator2, _step2, item;
-        return _regeneratorRuntime().wrap(function _callee13$(_context14) {
-          while (1) switch (_context14.prev = _context14.next) {
+        return _regeneratorRuntime().wrap(function _callee14$(_context15) {
+          while (1) switch (_context15.prev = _context15.next) {
             case 0:
-              _context14.next = 2;
+              _context15.next = 2;
               return new this().first();
             case 2:
-              existingData = _context14.sent;
+              existingData = _context15.sent;
               if (existingData) {
-                _context14.next = 21;
+                _context15.next = 21;
                 break;
               }
               _iterator2 = _createForOfIteratorHelper(data);
-              _context14.prev = 5;
+              _context15.prev = 5;
               _iterator2.s();
             case 7:
               if ((_step2 = _iterator2.n()).done) {
-                _context14.next = 13;
+                _context15.next = 13;
                 break;
               }
               item = _step2.value;
-              _context14.next = 11;
+              _context15.next = 11;
               return this.insert(item);
             case 11:
-              _context14.next = 7;
+              _context15.next = 7;
               break;
             case 13:
-              _context14.next = 18;
+              _context15.next = 18;
               break;
             case 15:
-              _context14.prev = 15;
-              _context14.t0 = _context14["catch"](5);
-              _iterator2.e(_context14.t0);
+              _context15.prev = 15;
+              _context15.t0 = _context15["catch"](5);
+              _iterator2.e(_context15.t0);
             case 18:
-              _context14.prev = 18;
+              _context15.prev = 18;
               _iterator2.f();
-              return _context14.finish(18);
+              return _context15.finish(18);
             case 21:
             case "end":
-              return _context14.stop();
+              return _context15.stop();
           }
-        }, _callee13, this, [[5, 15, 18, 21]]);
+        }, _callee14, this, [[5, 15, 18, 21]]);
       }));
     }
   }, {
     key: "executeSql",
     value: function executeSql(sql) {
       var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee14() {
+      return __awaiter(this, void 0, void 0, /*#__PURE__*/_regeneratorRuntime().mark(function _callee15() {
         var _this4 = this;
-        return _regeneratorRuntime().wrap(function _callee14$(_context15) {
-          while (1) switch (_context15.prev = _context15.next) {
+        return _regeneratorRuntime().wrap(function _callee15$(_context16) {
+          while (1) switch (_context16.prev = _context16.next) {
             case 0:
-              _context15.next = 2;
+              _context16.next = 2;
               return new Promise(function (resolve, reject) {
                 _this4.db.transaction(function (tx) {
                   tx.executeSql(sql, params, function (_, result) {
@@ -644,12 +725,12 @@ var Model = /*#__PURE__*/function () {
                 });
               });
             case 2:
-              return _context15.abrupt("return", _context15.sent);
+              return _context16.abrupt("return", _context16.sent);
             case 3:
             case "end":
-              return _context15.stop();
+              return _context16.stop();
           }
-        }, _callee14);
+        }, _callee15);
       }));
     }
     // Cast an attribute to the specified type

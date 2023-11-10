@@ -9,15 +9,24 @@ class Group extends Model {
   static withTimestamps = false;
 
   people() {
-    return this.hasMany(Person, 'groupId');
+    return this.belongsToMany(Person, 'groupId');
+  }
+}
+
+class Location extends Model {
+  static tableName = 'locations';
+  static withTimestamps = false;
+
+  people() {
+    return this.belongsTo(Person, 'locationId');
   }
 }
 
 class Person extends Model {
   static tableName = 'people';
 
-  group() {
-    return this.belongsTo(Group, 'groupId');
+  groups() {
+    return this.belongsToMany(Group, 'groupId');
   }
 }
 
@@ -29,34 +38,61 @@ const migrations = {
       name TEXT
     );
   `,
-  '1699142749_init_people': `
+  '1699142748_init_groups_people': `
+    CREATE TABLE IF NOT EXISTS groups_people (
+      id INTEGER PRIMARY KEY NOT NULL,
+      groupId INTEGER NOT NULL,
+      personId INTEGER NOT NULL
+    );
+  `,
+  '1699142749_init_locations': `
+    CREATE TABLE IF NOT EXISTS locations (
+      id INTEGER PRIMARY KEY NOT NULL,
+      name TEXT
+    );
+  `,
+  '1699142750_init_people': `
     CREATE TABLE IF NOT EXISTS people (
       id INTEGER PRIMARY KEY NOT NULL,
       createdAt DATETIME NOT NULL,
       updatedAt DATETIME NOT NULL,
-      groupId INTEGER NOT NULL,
-      name TEXT
+      locationId INTEGER NOT NULL,
+      name TEXT,
+      age INTEGER
     );
   `,
 }
 
 // Seed data
-const groupSeedData = [
-  { id: 1, name: 'Family' },
-  { id: 2, name: 'Friends' },
-  { id: 3, name: 'Coworkers' }
-];
-
-const peopleSeedData = [
-  { id: 1, name: 'Nora', groupId: 1 },
-  { id: 2, name: 'Alice', groupId: 2 },
-  { id: 3, name: 'Bob', groupId: 2 },
-  { id: 4, name: 'Ellie', groupId: 1 }
-];
+const seedData = {
+  groups: [
+    { id: 1, name: 'Family' },
+    { id: 2, name: 'Friends' },
+    { id: 3, name: 'Coworkers' },
+  ],
+  groups_people: [
+    { groupId: 1, personId: 1 },
+    { groupId: 1, personId: 4 },
+    { groupId: 2, personId: 2 },
+    { groupId: 2, personId: 3 },
+  ],
+  locations: [
+    { id: 1, name: 'Seattle, WA' },
+    { id: 2, name: 'Phoenix, AZ' },
+    { id: 3, name: 'Istanbul, Turkey' },
+  ],
+  people: [
+    { id: 1, name: 'Nora', age: 31, locationId: 1 },
+    { id: 2, name: 'Alice', age: 25, locationId: 2 },
+    { id: 3, name: 'Bob', age: 30, locationId: 3 },
+    { id: 4, name: 'Ellie', age: 22, locationId: 1 },
+  ],
+}
 
 export default function App() {
 
   const [groups, setGroups] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [people, setPeople] = useState([]);
   const [person, setPerson] = useState(null);
 
@@ -64,38 +100,37 @@ export default function App() {
   useEffect(() => {
     (async() => {
       await Migration.runMigrations(migrations);
-      await Group.seed(groupSeedData);
-      await Person.seed(peopleSeedData);
+      await Group.seed(seedData.groups);
+      await Location.seed(seedData.locations);
+      await Person.seed(seedData.people);
 
-      const groups = await Group.with('people').get();
-      setGroups(groups);
-      console.log('App.js groups', groups);
-      console.log('App.js groups[0].people()', groups[0].people);
+      // You can also use the base Model class and provide the table name manually
+      await Model.table('groups_people').seed(seedData.groups_people);
 
-      const people = await Person.with('group').get();
+      const locations = await Location.with('people').get();
+      setLocations(locations);
+
+      const people = await Person.with('location').get();
       setPeople(people);
-      console.log('People', people);
 
-      const person = await Person.find(1);
-      // await person.update({name: 'Nora II'});
+      const person = await Person.where('name', 'Nora').first();
       setPerson(person);
-      console.log('Person', person);
     })();
   }, [])
 
   return (
     <View style={styles.container}>
 
-      <Text>Groups:</Text>
-      {!!groups.length && groups.map(group => (
-        <Text key={group.id}>{group.name} - {!!group?.people?.length && group.people.map(person => person.name).join(', ')}</Text>
+      <Text>Locations:</Text>
+      {!!locations.length && locations.map(location => (
+        <Text key={location.id}>{location.name} - {location?.group?.name}</Text>
       ))}
 
       <View style={{ height: 10 }} />
 
       <Text>People:</Text>
       {!!people.length && people.map(person => (
-        <Text key={person.id}>{person.name} - {person?.group?.name}</Text>
+        <Text key={person.id}>{person.name} - {!!location?.people?.length && location.people.map(person => person.name).join(', ')}</Text>
       ))}
 
       <View style={{ height: 10 }} />

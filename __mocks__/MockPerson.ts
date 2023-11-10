@@ -9,8 +9,13 @@ export class MockPerson extends Model {
     isAdult: 'boolean',
   };
 
-  group() {
+  location() {
+    const MockLocationInstance = new MockLocation() as unknown as Model;
+    return this.hasOne(MockLocationInstance, 'locationId');
+  }
+
+  groups() {
     const MockGroupInstance = new MockGroup() as unknown as Model;
-    return this.belongsTo(MockGroupInstance, 'groupId');
+    return this.belongsToMany(MockGroupInstance, 'groupId');
   }
 }

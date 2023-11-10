@@ -1,13 +1,11 @@
 // @ts-nocheck
 import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
-import { mockDataStore } from '../__mocks__/mockDataStore';
-
-const originalMockDataStore = {...mockDataStore};
+import { mockDataStore, resetMockDataStore } from '../__mocks__/mockDataStore';
 
 describe('update', () => {
   beforeEach(() => {
-    mockDataStore = {...originalMockDataStore};
+    resetMockDataStore()
   });
 
   it('should update a record with the given attributes', async () => {

@@ -1,5 +1,4 @@
 // @ts-nocheck
-import { mock } from 'node:test';
 import { mockDataStore } from './mockDataStore';
 
 const mockTransaction = jest.fn();
@@ -31,23 +30,69 @@ function findTableInSql(sql) {
   return null;
 }
 
+function parseJoinClauses(sql) {
+  const joins = [];
+  const joinRegex = /JOIN (\w+) ON (\w+\.\w+) = (\w+\.\w+)/gi;
+  let match;
+  while ((match = joinRegex.exec(sql)) !== null) {
+    joins.push({
+      joinedTable: match[1],
+      firstTableColumn: match[2],
+      secondTableColumn: match[3],
+    });
+  }
+  return joins;
+}
+
+function applyJoins(rows, joins) {
+  // This function will merge data from joined tables into the main table's rows
+  return rows.map(row => {
+    let joinedData = {};
+    joins.forEach(join => {
+      const [firstTable, firstColumn] = join.firstTableColumn.split('.');
+      const [secondTable, secondColumn] = join.secondTableColumn.split('.');
+
+      // Find matching rows in the joined table
+      const matchingRows = mockDataStore[join.joinedTable].filter(relatedRow => {
+        return String(row[firstColumn]) === String(relatedRow[secondColumn]);
+      });
+
+      // Merge all matching rows data
+      matchingRows.forEach(match => {
+        joinedData = { ...joinedData, ...match };
+      });
+    });
+    return { ...row, ...joinedData };
+  });
+}
+
 mockExecuteSql.mockImplementation((sql, params, success, failure) => {
   try {
     const upperSql = sql.trim().toUpperCase();
     const table = findTableInSql(sql);
     let rows;
 
+    const joins = parseJoinClauses(sql);
+
     if (upperSql.startsWith('SELECT')) {
-      // Extract the WHERE clause directly
-      const whereMatch = sql.match(/WHERE (\w+) = \?/i);
+      // Implementing WHERE clause parsing to filter the result set
+      const whereMatch = sql.match(/WHERE (\w+\.\w+|\w+) = \?/i);
       let whereColumn, whereValue;
       if (whereMatch) {
-        whereColumn = whereMatch[1];
-        whereValue = params[0]; // Assuming there's only one parameter for the WHERE clause.
+        whereColumn = whereMatch[1].includes('.') ? whereMatch[1].split('.')[1] : whereMatch[1];
+        whereValue = params[0]; // Assuming there's only one parameter for the WHERE clause
       }
 
-      // Filter the rows based on the WHERE condition
-      rows = whereColumn ? mockDataStore[table].filter(row => String(row[whereColumn]) === String(whereValue)) : mockDataStore[table];
+      // Fetching and filtering rows from the primary table
+      rows = mockDataStore[table].filter(row => {
+        // If a WHERE clause is present, filter the rows based on the condition
+        return whereColumn ? String(row[whereColumn]) === String(whereValue) : true;
+      });
+
+      // Apply the JOIN logic if joins are present
+      if (joins.length > 0) {
+        rows = applyJoins(rows, joins);
+      }
 
       success(undefined, {
         rows: {
@@ -106,29 +151,33 @@ mockExecuteSql.mockImplementation((sql, params, success, failure) => {
       // Extract the condition from the WHERE clause
       const wherePart = sql.match(/WHERE\s+(.+)/i);
       if (!wherePart) throw new Error('DELETE statement must include a WHERE clause');
-
+    
       const condition = wherePart[1].trim();
       // Assume only one condition for simplicity
       const [column, placeholder] = condition.split('=').map(c => c.trim());
       // Find the index of the placeholder in the params array
       const placeholderIndex = sql.substring(0, sql.indexOf(placeholder)).split('?').length - 1;
       const value = params[placeholderIndex];
-
-      // Filter out the rows that match the condition
+    
+      // Calculate rows affected before deletion
       const initialLength = mockDataStore[table].length;
+    
+      // Filter out the rows that match the condition
       mockDataStore[table] = mockDataStore[table].filter(row => {
         // Ensure the comparison is done with the correct type
-        return row[column] !== (column === 'id' ? Number(value) : value);
+        const rowValue = (typeof row[column] === 'number') ? parseInt(value, 10) : value;
+        return row[column] !== rowValue;
       });
+    
       const rowsAffected = initialLength - mockDataStore[table].length;
-
+    
       success(undefined, { rowsAffected });
     } else {
       throw new Error('Unhandled SQL statement');
-    }
+    }    
   } catch (e) {
     console.error(e);
-    reject(undefined, e);
+    failure(undefined, e);
   }
 })
 

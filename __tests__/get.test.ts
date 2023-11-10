@@ -32,9 +32,9 @@ describe('get', () => {
   });
 
   test('should handle complex queries with multiple where clauses', async () => {
-    const person = await MockPerson.where('name', '=', 'Nora').where('groupId', '=', 1).first();
+    const person = await MockPerson.where('name', '=', 'Nora').where('locationId', '=', 1).first();
     expect(person).toBeDefined();
     expect(person!.name).toBe('Nora');
-    expect(person!.groupId).toBe(1);
+    expect(person!.locationId).toBe(1);
   });
 });

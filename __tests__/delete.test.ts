@@ -1,13 +1,11 @@
 // @ts-nocheck
 import { mock } from 'node:test';
 import { MockPerson } from '../__mocks__/MockPerson';
-import { mockDataStore } from '../__mocks__/mockDataStore';
-
-const originalMockDataStore = {...mockDataStore};
+import { mockDataStore, resetMockDataStore } from '../__mocks__/mockDataStore';
 
 describe('delete', () => {
   beforeEach(() => {
-    mockDataStore = {...originalMockDataStore};
+    resetMockDataStore();
   });
 
   it('should delete a record with the given id', async () => {
