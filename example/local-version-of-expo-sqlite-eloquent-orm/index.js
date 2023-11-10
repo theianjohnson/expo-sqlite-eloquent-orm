@@ -4,17 +4,17 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.Migration = exports.Model = void 0;
-var Model_1 = require("./Model");
+const Model_1 = require("./Model");
 Object.defineProperty(exports, "Model", {
   enumerable: true,
-  get: function get() {
+  get: function () {
     return Model_1.Model;
   }
 });
-var Migration_1 = require("./Migration");
+const Migration_1 = require("./Migration");
 Object.defineProperty(exports, "Migration", {
   enumerable: true,
-  get: function get() {
+  get: function () {
     return Migration_1.Migration;
   }
 });

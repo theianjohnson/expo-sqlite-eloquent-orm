@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { Model } from '../src/Model';
 import { MockGroup } from './MockGroup';
+import { MockLocation } from './MockLocation';
 
 export class MockPerson extends Model {
   static tableName = 'people';
@@ -11,11 +12,11 @@ export class MockPerson extends Model {
 
   location() {
     const MockLocationInstance = new MockLocation() as unknown as Model;
-    return this.hasOne(MockLocationInstance, 'locationId');
+    return this.belongsTo(MockLocationInstance);
   }
 
   groups() {
     const MockGroupInstance = new MockGroup() as unknown as Model;
-    return this.belongsToMany(MockGroupInstance, 'groupId');
+    return this.belongsToMany(MockGroupInstance);
   }
 }

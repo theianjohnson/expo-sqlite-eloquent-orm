@@ -1,6 +1,5 @@
-// @ts-nocheck
+// hasOne.test.ts
 import { MockPerson } from '../__mocks__/MockPerson';
-import { MockLocation } from '../__mocks__/MockLocation';
 import { mockDataStore, resetMockDataStore } from '../__mocks__/mockDataStore';
 
 describe('hasOne', () => {
@@ -8,32 +7,29 @@ describe('hasOne', () => {
     resetMockDataStore();
   });
 
-  it('should retrieve related person using hasOne relationship', async () => {
-    // Retrieve a group from the data store
-    const mockLocation = new MockLocation(mockDataStore.locations[0]);
+  it('should retrieve the related location for a person', async () => {
+    // Retrieve a person from the data store
+    const mockPerson = new MockPerson(mockDataStore.people[0]);
 
-    // Retrieve the related person using hasOne
-    const relatedPerson = await mockLocation.hasOne(MockPerson, 'locationId');
+    // Load the related location for the person
+    const relatedLocation = await mockPerson.location();
+    console.log('relatedLocation', relatedLocation)
 
-    // Expect only one relatedPerson to be returned
-    expect(Array.isArray(relatedPerson)).toBe(false);
-    
-    // Find the expected person from the data store
-    const expectedPerson = mockDataStore.people.find(person => person.locationId === mockLocation.id);
+    // Find the expected location from the data store
+    const expectedLocation = mockDataStore.locations.find(location => location.id === mockPerson.locationId);
 
-    // Check if the relatedPerson matches the expectedPerson
-    expect(relatedPerson).toEqual(expectedPerson);
+    // Check if the relatedLocation matches the expectedLocation
+    expect(relatedLocation).toEqual(expectedLocation);
   });
 
-  it('should return null if no related person found', async () => {
-    // Create a mock group without a related person
-    const mockLocation = new MockLocation(mockDataStore.locations[0]);
-    mockLocation.id = 999; // Set an invalid ID to ensure no related person is found
+  it('should return null if no related location is found', async () => {
+    // Create a mock person with a non-existing locationId
+    const mockPerson = new MockPerson({ ...mockDataStore.people[0], locationId: 999 });
 
-    // Retrieve the related person using hasOne
-    const relatedPerson = await mockLocation.hasOne(MockPerson, 'locationId');
+    // Access the related location for the person
+    const relatedLocation = await mockPerson.location();
 
-    // Check if relatedPerson is null
-    expect(relatedPerson).toBeNull();
+    // Check if relatedLocation is null
+    expect(relatedLocation).toBeNull();
   });
 });

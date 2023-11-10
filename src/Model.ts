@@ -89,8 +89,8 @@ export class Model {
       return instance
     }
 
-    static async find (id: number | string): Promise<Model | null> {
-      return await new this().where('id', '=', id).first()
+    static async find(id: number | string): Promise<Model | null> {
+      return await new this().find(id)
     }
   
     static async insert (data: Record<string, any>): Promise<SQLResult> {
@@ -106,7 +106,6 @@ export class Model {
   
       const fields = Object.keys(data);
       const placeholders = fields.map(() => '?').join(', ');
-      const values = fields.map(field => data[field]);
   
       // Cast attributes for storage
       const valuesForStorage = fields.map(field => {
@@ -116,13 +115,21 @@ export class Model {
       const sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
       return await this.executeSql(sql, valuesForStorage);
     }
+
+    static async seed(data: Array<Record<string, any>>) {
+      // Create an instance and forward to the instance method
+      const instance = new this();
+      return await instance.seed(data);
+    }
   
-    static async seed (data: Array<Record<string, any>>) {
+    async seed(data: Array<Record<string, any>>) {
+      const constructor = this.constructor as typeof Model;
+  
       // Check if the table already has data
-      const existingData = await new this().first()
+      const existingData = await this.first();
       if (!existingData) {
         for (const item of data) {
-          await this.insert(item)
+          await constructor.insert(item); // Use constructor to call static method
         }
       }
     }
@@ -229,6 +236,10 @@ export class Model {
     return this
   }
 
+  async find(id: number | string): Promise<Model | null> {
+    return await this.where('id', '=', id).first();
+  }
+
   // Instance methods
   async save(): Promise<SQLResult> {
     const constructor = this.constructor as typeof Model;
@@ -304,7 +315,7 @@ export class Model {
     return await constructor.executeSql(sql, params);
   }
 
-  getSql (): { query: string, params: Array<string | number | boolean | null> } {
+  getSql(): { query: string, params: Array<string | number | boolean | null> } {
     const constructor = this.constructor as typeof Model
 
     let query = `SELECT ${this.clauses.select} FROM ${constructor.tableName}`
@@ -340,7 +351,7 @@ export class Model {
     return { query, params };
   }
 
-  async get (): Promise<Model[]> {
+  async get(): Promise<Model[]> {
     const constructor = this.constructor as typeof Model
 
     const { query, params } = this.getSql();
@@ -379,7 +390,7 @@ export class Model {
     return instances
   }
 
-  async first (): Promise<Model | null> {
+  async first(): Promise<Model | null> {
     this.limit(1)
     const results = await this.get()
     return results[0] || null
@@ -409,16 +420,28 @@ export class Model {
   }
 
   // Relationship methods
-  async hasOne<T extends Model>(relatedModel: T, foreignKey: string, localKey: string = 'id'): Promise<Model | null> {
-    return await relatedModel.where(foreignKey, '=', this[localKey]).first()
+  async hasOne<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model | null> {
+    const constructor = this.constructor as typeof Model;
+    if (!foreignKey) {
+      foreignKey = `${constructor.name.toLowerCase()}Id`;
+    }
+    return await relatedModel.where(foreignKey, '=', this[localKey]).first();
   }
 
-  async hasMany<T extends Model>(relatedModel: T, foreignKey: string, localKey: string = 'id'): Promise<Model[]> {
-    return await relatedModel.where(foreignKey, '=', this[localKey]).get()
+  async hasMany<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model[]> {
+    const constructor = this.constructor as typeof Model;
+    if (!foreignKey) {
+      foreignKey = `${constructor.name.toLowerCase()}Id`;
+    }
+    return await relatedModel.where(foreignKey, '=', this[localKey]).get();
   }
 
   async belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey: string = 'id'): Promise<Model | null> {
-    return await relatedModel.where(otherKey, '=', this[foreignKey]).first()
+    const constructor = relatedModel.constructor as typeof Model;
+    if (!foreignKey) {
+      foreignKey = `${constructor.name.toLowerCase()}Id`;
+    }
+    return await relatedModel.where(otherKey, '=', this[foreignKey]).first();
   }
 
   async belongsToMany<T extends Model>(
@@ -458,5 +481,4 @@ export class Model {
     // Instantiate the related models with the result
     return instances;
   }
-  
 }

@@ -9,7 +9,7 @@ class Group extends Model {
   static withTimestamps = false;
 
   people() {
-    return this.belongsToMany(Person, 'groupId');
+    return this.belongsToMany(Person);
   }
 }
 
@@ -18,15 +18,19 @@ class Location extends Model {
   static withTimestamps = false;
 
   people() {
-    return this.belongsTo(Person, 'locationId');
+    return this.hasMany(Person);
   }
 }
 
 class Person extends Model {
   static tableName = 'people';
 
+  location() {
+    return this.belongsTo(Location);
+  }
+
   groups() {
-    return this.belongsToMany(Group, 'groupId');
+    return this.belongsToMany(Group);
   }
 }
 
@@ -91,7 +95,8 @@ const seedData = {
 
 export default function App() {
 
-  const [groups, setGroups] = useState([]);
+  // const [groups, setGroups] = useState([]);
+  const [location, setLocation] = useState(null);
   const [locations, setLocations] = useState([]);
   const [people, setPeople] = useState([]);
   const [person, setPerson] = useState(null);
@@ -105,13 +110,17 @@ export default function App() {
       await Person.seed(seedData.people);
 
       // You can also use the base Model class and provide the table name manually
-      await Model.table('groups_people').seed(seedData.groups_people);
+      // await Model.table('groups_people').seed(seedData.groups_people);
+
+      const location = await Location.with('people').find(1);
+      setLocation(location);
 
       const locations = await Location.with('people').get();
       setLocations(locations);
 
       const people = await Person.with('location').get();
       setPeople(people);
+      console.log(people)
 
       const person = await Person.where('name', 'Nora').first();
       setPerson(person);
@@ -120,17 +129,23 @@ export default function App() {
 
   return (
     <View style={styles.container}>
+      <Text>Location:</Text>
+      {!!location && (
+        <Text>{location.name} - {location?.person?.name}</Text>
+      )}
+
+      <View style={{ height: 10 }} />
 
       <Text>Locations:</Text>
       {!!locations.length && locations.map(location => (
-        <Text key={location.id}>{location.name} - {location?.group?.name}</Text>
+        <Text key={location.id}>{location.name} - {!!location?.people?.length && location.people.map(person => person.name).join(', ')}</Text>
       ))}
 
       <View style={{ height: 10 }} />
 
       <Text>People:</Text>
       {!!people.length && people.map(person => (
-        <Text key={person.id}>{person.name} - {!!location?.people?.length && location.people.map(person => person.name).join(', ')}</Text>
+        <Text key={person.id}>{person.name} - {person?.location?.name}</Text>
       ))}
 
       <View style={{ height: 10 }} />

@@ -1,32 +1,29 @@
 // @ts-nocheck
 import { MockPerson } from '../__mocks__/MockPerson';
-import { MockGroup } from '../__mocks__/MockGroup';
-import { mockDataStore } from '../__mocks__/mockDataStore';
+import { MockLocation } from '../__mocks__/MockLocation';
+import { mockDataStore, resetMockDataStore } from '../__mocks__/mockDataStore';
 
 describe('hasMany', () => {
-  it('should retrieve related people using hasMany relationship', async () => {
-    // Retrieve a group from the data store
-    const mockGroup = new MockGroup(mockDataStore.groups[0]);
-
-    // Retrieve the related people using hasMany
-    const relatedPeople = await mockGroup.hasMany(MockPerson, 'groupId');
-
-    // Find the expected people from the data store
-    const expectedPeople = mockDataStore.people.filter(person => person.groupId === mockGroup.id);
-
-    // Check if the relatedPeople array matches the expectedPeople array
-    expect(relatedPeople).toEqual(expectedPeople);
+  beforeEach(() => {
+    resetMockDataStore();
   });
 
-  it('should return an empty array if no related people found', async () => {
-    // Create a mock group without related people
-    const mockGroup = new MockGroup(mockDataStore.groups[0]);
-    mockGroup.id = 999; // Set an invalid ID to ensure no related people are found
+  it('should retrieve all people associated with a given location', async () => {
+    // Assuming location with id 1 exists
+    const location = MockLocation.with('people').find(1);
+console.log('location', location)
+    // Expected people from mockDataStore
+    const expectedPeople = mockDataStore.people.filter(person => person.locationId === location.id);
+console.log('expectedPeople', expectedPeople)
+    // Comparing the retrieved people with expected people
+    expect(location.people).toEqual(expectedPeople);
+  });
 
-    // Retrieve the related people using hasMany
-    const relatedPeople = await mockGroup.hasMany(MockPerson, 'groupId');
+  it('should return an empty array if no people are associated with the location', async () => {
+    // Create a mock location with an id that doesn't have associated people
+    const location = MockLocation.find(999);
 
-    // Check if relatedPeople is an empty array
-    expect(relatedPeople).toEqual([]);
+    // Expecting an empty array
+    expect(location.people).toEqual(undefined);
   });
 });

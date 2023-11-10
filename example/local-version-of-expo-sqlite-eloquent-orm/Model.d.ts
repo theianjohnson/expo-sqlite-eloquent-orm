@@ -41,6 +41,7 @@ export declare class Model {
     [key: string]: any;
     constructor(attributes?: ModelAttributes);
     static get(): Promise<Model[]>;
+    static table<T extends Model>(this: new () => T, name: string): T;
     static select<T extends Model>(this: new () => T, fields?: string | string[]): T;
     static join<T extends Model>(this: new () => T, type: 'INNER' | 'LEFT' | 'RIGHT', table: string, firstKey: string, secondKey: string): T;
     static where<T extends Model>(this: new () => T, column: string, operatorOrValue: any, value?: any): T;
@@ -50,15 +51,18 @@ export declare class Model {
     static find(id: number | string): Promise<Model | null>;
     static insert(data: Record<string, any>): Promise<SQLResult>;
     static seed(data: Array<Record<string, any>>): Promise<void>;
+    seed(data: Array<Record<string, any>>): Promise<void>;
     static executeSql(sql: string, params?: any[]): Promise<SQLResult>;
     static castAttribute(key: keyof Casts, value: any): any;
     static prepareAttributeForStorage(key: keyof Casts, value: any): any;
+    table(name: string): this;
     select(fields?: string | string[]): this;
     join(type: 'INNER' | 'LEFT' | 'RIGHT', table: string, firstKey: string, secondKey: string): this;
     where(column: string, operatorOrValue: any, value?: any): this;
     orderBy(column: string, direction?: 'ASC' | 'DESC'): this;
     limit(number: number): this;
     with(relation: string): this;
+    find(id: number | string): Promise<Model | null>;
     save(): Promise<SQLResult>;
     delete(): Promise<SQLResult>;
     getSql(): {
@@ -69,8 +73,8 @@ export declare class Model {
     first(): Promise<Model | null>;
     update(attributes: Partial<ModelAttributes>): Promise<SQLResult>;
     cleanObject<T extends Model>(object: T): T;
-    hasOne<T extends Model>(relatedModel: T, foreignKey: string, localKey?: string): Promise<Model | null>;
-    hasMany<T extends Model>(relatedModel: T, foreignKey: string, localKey?: string): Promise<Model[]>;
+    hasOne<T extends Model>(relatedModel: T, foreignKey?: string, localKey?: string): Promise<Model | null>;
+    hasMany<T extends Model>(relatedModel: T, foreignKey?: string, localKey?: string): Promise<Model[]>;
     belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey?: string): Promise<Model | null>;
     belongsToMany<T extends Model>(this: T, relatedModel: T, joinTableName?: string, // This can be optional if the default naming convention is to be used
     foreignKey?: string, // This can be optional and inferred from the table names

@@ -8,6 +8,6 @@ export class MockLocation extends Model {
 
   people() {
     const MockPersonInstance = new MockPerson() as unknown as Model;
-    return this.belongsTo(MockPersonInstance, 'locationId');
+    return this.hasMany(MockPersonInstance);
   }
 }
