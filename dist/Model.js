@@ -461,7 +461,7 @@ class Model {
   hasMany(relatedModel, foreignKey, localKey = 'id') {
     return __awaiter(this, void 0, void 0, function* () {
       if (!foreignKey) {
-        foreignKey = `${relatedModel.name.toLowerCase()}Id`;
+        foreignKey = `${this.constructor.name.toLowerCase()}Id`;
       }
       return yield relatedModel.where(foreignKey, '=', this[localKey]).get();
     });
@@ -490,7 +490,7 @@ class Model {
       const currentTableName = currentConstructor.tableName;
       // If joinTableName is not provided, determine it based on the table names
       if (!joinTableName) {
-        [joinTableName] = [relatedTableName, currentTableName].sort().join('_');
+        joinTableName = [relatedTableName, currentTableName].sort().join('_');
       }
       // Determine foreign keys if not provided
       if (!foreignKey) {
@@ -501,7 +501,7 @@ class Model {
         otherKey = `${relatedName}Id`; // Assuming the singular form of the table name plus 'Id'
       }
       // Use the ORM's methods to construct the query
-      const instances = yield relatedConstructor.join('INNER', joinTableName, `${currentTableName}.id`, `${joinTableName}.${foreignKey}`).join('INNER', relatedTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`).where(`${currentTableName}.id`, '=', this.id).get();
+      const instances = yield relatedConstructor.join('INNER', joinTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`).where(`${joinTableName}.${foreignKey}`, '=', this.id).get();
       // Instantiate the related models with the result
       return instances;
     });

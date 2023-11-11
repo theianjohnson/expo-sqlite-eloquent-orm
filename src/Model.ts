@@ -463,8 +463,8 @@ export class Model {
 
   async hasMany<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model[]> {
     if (!foreignKey) {
-      console.log('hasMany auto foreignKey', `${relatedModel.name.toLowerCase()}Id`);
-      foreignKey = `${relatedModel.name.toLowerCase()}Id`;
+      console.log('hasMany auto foreignKey', `${this.constructor.name.toLowerCase()}Id`);
+      foreignKey = `${this.constructor.name.toLowerCase()}Id`;
     }
     return await relatedModel.where(foreignKey, '=', this[localKey]).get();
   }
