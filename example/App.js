@@ -131,7 +131,7 @@ export default function App() {
     <View style={styles.container}>
       <Text>Location:</Text>
       {!!location && (
-        <Text>{location.name} - {location?.person?.name}</Text>
+        <Text>{location.name} - {!!location?.people?.length && location.people.map(person => person.name).join(', ')}</Text>
       )}
 
       <View style={{ height: 10 }} />

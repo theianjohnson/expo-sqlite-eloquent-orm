@@ -33,4 +33,25 @@ describe('belongsTo', () => {
     // Check if relatedLocation is null
     expect(relatedLocation).toBeNull();
   });
+
+  it('should load related location for a person using find', async () => {
+    const personId = 1; // Assuming this ID exists in your mockDataStore
+    const person = await MockPerson.with('location').find(personId);
+
+    expect(person).toBeDefined();
+    expect(person.location).toBeDefined();
+    const expectedLocation = mockDataStore.locations.find(location => location.id === person.locationId);
+    expect(person.location).toEqual(expectedLocation);
+  });
+
+  it('should load related locations for people using get', async () => {
+    const people = await MockPerson.with('location').get();
+
+    expect(Array.isArray(people)).toBe(true);
+    people.forEach(person => {
+      const expectedLocation = mockDataStore.locations.find(location => location.id === person.locationId);
+      expect(person.location).toEqual(expectedLocation);
+    });
+  });
+  
 });

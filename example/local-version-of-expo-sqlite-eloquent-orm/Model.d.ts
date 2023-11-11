@@ -73,7 +73,7 @@ export declare class Model {
     first(): Promise<Model | null>;
     update(attributes: Partial<ModelAttributes>): Promise<SQLResult>;
     cleanObject<T extends Model>(object: T): T;
-    hasOne<T extends Model>(relatedModel: T, foreignKey?: string, localKey?: string): Promise<Model | null>;
+    hasOne<T extends Model>(relatedModel: T, localKey?: string, foreignKey?: string): Promise<Model | null>;
     hasMany<T extends Model>(relatedModel: T, foreignKey?: string, localKey?: string): Promise<Model[]>;
     belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey?: string): Promise<Model | null>;
     belongsToMany<T extends Model>(this: T, relatedModel: T, joinTableName?: string, // This can be optional if the default naming convention is to be used

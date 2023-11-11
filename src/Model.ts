@@ -363,7 +363,7 @@ export class Model {
     console.log(`Creating instances of ${this.constructor.name} from query result.`);
     const instances = result.rows._array.map(row => {
       const instance = new constructor(row)
-      return this.cleanObject(instance) // Use the new method here
+      return this.cleanObject(instance)
     })
 
     // Load relationships if any are specified
@@ -383,6 +383,7 @@ export class Model {
         }))
       }
     }
+    console.log('instances', instances);
 
     // Reset the clauses for the next query
     this.cleanObject(this)
@@ -423,7 +424,7 @@ export class Model {
   async hasOne<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model | null> {
     const constructor = this.constructor as typeof Model;
     if (!foreignKey) {
-      foreignKey = `${constructor.name.toLowerCase()}Id`;
+      foreignKey = `${constructor.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
     }
     return await relatedModel.where(foreignKey, '=', this[localKey]).first();
   }
@@ -431,6 +432,7 @@ export class Model {
   async hasMany<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model[]> {
     const constructor = this.constructor as typeof Model;
     if (!foreignKey) {
+      console.log('Auto foreignKey', `${constructor.name.toLowerCase()}Id`);
       foreignKey = `${constructor.name.toLowerCase()}Id`;
     }
     return await relatedModel.where(foreignKey, '=', this[localKey]).get();

@@ -119,7 +119,6 @@ class Model {
       }
       const fields = Object.keys(data);
       const placeholders = fields.map(() => '?').join(', ');
-      const values = fields.map(field => data[field]);
       // Cast attributes for storage
       const valuesForStorage = fields.map(field => {
         return this.prepareAttributeForStorage(field, data[field]);
@@ -378,7 +377,7 @@ class Model {
 
       const instances = result.rows._array.map(row => {
         const instance = new constructor(row);
-        return this.cleanObject(instance); // Use the new method here
+        return this.cleanObject(instance);
       });
       // Load relationships if any are specified
 
@@ -435,8 +434,9 @@ class Model {
     return __awaiter(this, void 0, void 0, function* () {
       const constructor = this.constructor;
       if (!foreignKey) {
-        foreignKey = `${constructor.name.toLowerCase()}Id`;
+        foreignKey = `${constructor.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
       }
+
       return yield relatedModel.where(foreignKey, '=', this[localKey]).first();
     });
   }
