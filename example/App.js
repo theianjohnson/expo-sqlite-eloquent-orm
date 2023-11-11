@@ -104,10 +104,10 @@ export default function App() {
   // Run migrations and seed data
   useEffect(() => {
     (async() => {
-      await Migration.runMigrations(migrations);
-      await Group.seed(seedData.groups);
-      await Location.seed(seedData.locations);
-      await Person.seed(seedData.people);
+      // await Migration.runMigrations(migrations);
+      // await Group.seed(seedData.groups);
+      // await Location.seed(seedData.locations);
+      // await Person.seed(seedData.people);
 
       // You can also use the base Model class and provide the table name manually
       // await Model.table('groups_people').seed(seedData.groups_people);

@@ -453,7 +453,7 @@ class Model {
     return __awaiter(this, void 0, void 0, function* () {
       const constructor = relatedModel.constructor;
       if (!foreignKey) {
-        foreignKey = `${constructor.name.toLowerCase()}Id`;
+        foreignKey = `${relatedModel.name.toLowerCase()}Id`;
       }
       return yield relatedModel.where(otherKey, '=', this[foreignKey]).first();
     });

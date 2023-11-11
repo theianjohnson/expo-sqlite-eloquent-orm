@@ -430,13 +430,14 @@ class Model {
     return object;
   }
   // Relationship methods
-  hasOne(relatedModel, localKey, foreignKey = 'id') {
+  hasOne(relatedModel, foreignKey, localKey = 'id') {
     return __awaiter(this, void 0, void 0, function* () {
       const constructor = this.constructor;
-      if (!localKey) {
-        localKey = `${constructor.name.toLowerCase()}Id`;
+      if (!foreignKey) {
+        foreignKey = `${constructor.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
       }
-      return yield relatedModel.where(localKey, '=', this[foreignKey]).first();
+
+      return yield relatedModel.where(foreignKey, '=', this[localKey]).first();
     });
   }
   hasMany(relatedModel, foreignKey, localKey = 'id') {
