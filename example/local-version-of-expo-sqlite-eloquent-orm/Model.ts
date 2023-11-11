@@ -423,7 +423,7 @@ export class Model {
   }
 
   async first(): Promise<Model | null> {
-    console.log('first()', this.tableName);
+    console.log('first()');
     this.limit(1)
     const results = await this.get()
     return results[0] || null
@@ -454,25 +454,22 @@ export class Model {
 
   // Relationship methods
   async hasOne<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model | null> {
-    const constructor = this.constructor as typeof Model;
     if (!foreignKey) {
-      console.log('hasOne auto foreignKey', `${constructor.name.toLowerCase()}Id`);
-      foreignKey = `${constructor.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
+      console.log('hasOne auto foreignKey', `${relatedModel.name.toLowerCase()}Id`);
+      foreignKey = `${relatedModel.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
     }
     return await relatedModel.where(foreignKey, '=', this[localKey]).first();
   }
 
   async hasMany<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model[]> {
-    const constructor = this.constructor as typeof Model;
     if (!foreignKey) {
-      console.log('hasMany auto foreignKey', `${constructor.name.toLowerCase()}Id`);
-      foreignKey = `${constructor.name.toLowerCase()}Id`;
+      console.log('hasMany auto foreignKey', `${relatedModel.name.toLowerCase()}Id`);
+      foreignKey = `${relatedModel.name.toLowerCase()}Id`;
     }
     return await relatedModel.where(foreignKey, '=', this[localKey]).get();
   }
 
   async belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey: string = 'id'): Promise<Model | null> {
-    const constructor = relatedModel.constructor as typeof Model;
     if (!foreignKey) {
       console.log('belongsTo foreignKey', `${relatedModel.name.toLowerCase()}Id`);
       foreignKey = `${relatedModel.name.toLowerCase()}Id`;
@@ -482,38 +479,54 @@ export class Model {
 
   async belongsToMany<T extends Model>(
     this: T,
-    relatedModel: T,
+    relatedModel: typeof Model,
     joinTableName?: string, // This can be optional if the default naming convention is to be used
     foreignKey?: string,   // This can be optional and inferred from the table names
     otherKey?: string      // This can be optional and inferred from the table names
   ): Promise<Model[]> {
 
-    const constructor = this.constructor as typeof Model;
+    console.log('belongsToMany()', relatedModel, joinTableName, foreignKey, otherKey);
 
-    // Determine the table names
-    const relatedTableName = relatedModel.tableName;
-    const currentTableName = constructor.tableName;
+    const relatedConstructor = (new relatedModel()).constructor as typeof Model;
+    const currentConstructor = this.constructor as typeof Model;
+
+    console.log('relatedConstructor', relatedConstructor);
+    console.log('currentConstructor', currentConstructor);
+
+    // Determine the names
+    const relatedName = relatedConstructor.name.toLowerCase();
+    const currentName = currentConstructor.name.toLowerCase();
+
+    console.log('relatedName', relatedName);
+    console.log('currentName', currentName);
   
+    const relatedTableName = relatedConstructor.tableName;
+    const currentTableName = currentConstructor.tableName;
+
+    console.log('relatedTableName', relatedTableName);
+    console.log('currentTableName', currentTableName);
+
     // If joinTableName is not provided, determine it based on the table names
     if (!joinTableName) {
-      [joinTableName] = [relatedTableName, currentTableName].sort().join('_');
+      joinTableName = [relatedTableName, currentTableName].sort().join('_');
     }
+
+    console.log('joinTableName', joinTableName);
   
     // Determine foreign keys if not provided
     if (!foreignKey) {
-      foreignKey = `${currentTableName.slice(0, -1)}Id`; // Assuming the singular form of the table name plus 'Id'
+      foreignKey = `${currentName}Id`; // Assuming the singular form of the table name plus 'Id'
     }
     if (!otherKey) {
-      otherKey = `${relatedTableName.slice(0, -1)}Id`; // Assuming the singular form of the table name plus 'Id'
+      otherKey = `${relatedName}Id`; // Assuming the singular form of the table name plus 'Id'
     }
   
     // Use the ORM's methods to construct the query
-    const instances = await constructor
-      .join('INNER', joinTableName, `${currentTableName}.id`, `${joinTableName}.${foreignKey}`)
-      .join('INNER', relatedTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`)
-      .where(`${currentTableName}.id`, '=', this.id) // Add a where clause to filter by the current model's id
+    const instances = await relatedConstructor
+      .join('INNER', joinTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`)
+      .where(`${joinTableName}.${foreignKey}`, '=', this.id)
       .get();
-  
+      
     // Instantiate the related models with the result
     return instances;
   }

@@ -7,7 +7,7 @@ export class MockLocation extends Model {
   static withTimestamps = false;
 
   people() {
-    const MockPersonInstance = new MockPerson() as Model;
-    return this.hasMany(MockPersonInstance, 'locationId');
+    // const MockPersonInstance = new MockPerson() as Model;
+    return this.hasMany(MockPerson, 'locationId');
   }
 }

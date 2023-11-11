@@ -451,9 +451,8 @@ class Model {
   // Relationship methods
   hasOne(relatedModel, foreignKey, localKey = 'id') {
     return __awaiter(this, void 0, void 0, function* () {
-      const constructor = this.constructor;
       if (!foreignKey) {
-        foreignKey = `${constructor.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
+        foreignKey = `${relatedModel.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
       }
 
       return yield relatedModel.where(foreignKey, '=', this[localKey]).first();
@@ -461,16 +460,14 @@ class Model {
   }
   hasMany(relatedModel, foreignKey, localKey = 'id') {
     return __awaiter(this, void 0, void 0, function* () {
-      const constructor = this.constructor;
       if (!foreignKey) {
-        foreignKey = `${constructor.name.toLowerCase()}Id`;
+        foreignKey = `${relatedModel.name.toLowerCase()}Id`;
       }
       return yield relatedModel.where(foreignKey, '=', this[localKey]).get();
     });
   }
   belongsTo(relatedModel, foreignKey, otherKey = 'id') {
     return __awaiter(this, void 0, void 0, function* () {
-      const constructor = relatedModel.constructor;
       if (!foreignKey) {
         foreignKey = `${relatedModel.name.toLowerCase()}Id`;
       }
@@ -484,25 +481,27 @@ class Model {
   otherKey // This can be optional and inferred from the table names
   ) {
     return __awaiter(this, void 0, void 0, function* () {
-      const constructor = this.constructor;
-      // Determine the table names
-      const relatedTableName = relatedModel.tableName;
-      const currentTableName = constructor.tableName;
+      const relatedConstructor = new relatedModel().constructor;
+      const currentConstructor = this.constructor;
+      // Determine the names
+      const relatedName = relatedConstructor.name.toLowerCase();
+      const currentName = currentConstructor.name.toLowerCase();
+      const relatedTableName = relatedConstructor.tableName;
+      const currentTableName = currentConstructor.tableName;
       // If joinTableName is not provided, determine it based on the table names
       if (!joinTableName) {
         [joinTableName] = [relatedTableName, currentTableName].sort().join('_');
       }
       // Determine foreign keys if not provided
       if (!foreignKey) {
-        foreignKey = `${currentTableName.slice(0, -1)}Id`; // Assuming the singular form of the table name plus 'Id'
+        foreignKey = `${currentName}Id`; // Assuming the singular form of the table name plus 'Id'
       }
 
       if (!otherKey) {
-        otherKey = `${relatedTableName.slice(0, -1)}Id`; // Assuming the singular form of the table name plus 'Id'
+        otherKey = `${relatedName}Id`; // Assuming the singular form of the table name plus 'Id'
       }
       // Use the ORM's methods to construct the query
-      const instances = yield constructor.join('INNER', joinTableName, `${currentTableName}.id`, `${joinTableName}.${foreignKey}`).join('INNER', relatedTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`).where(`${currentTableName}.id`, '=', this.id) // Add a where clause to filter by the current model's id
-      .get();
+      const instances = yield relatedConstructor.join('INNER', joinTableName, `${currentTableName}.id`, `${joinTableName}.${foreignKey}`).join('INNER', relatedTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`).where(`${currentTableName}.id`, '=', this.id).get();
       // Instantiate the related models with the result
       return instances;
     });

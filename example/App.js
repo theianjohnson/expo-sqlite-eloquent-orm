@@ -80,7 +80,7 @@ const seedData = {
     { groupId: 1, personId: 1 },
     { groupId: 1, personId: 4 },
     { groupId: 2, personId: 2 },
-    { groupId: 2, personId: 3 },
+    { groupId: 2, personId: 1 },
   ],
   locations: [
     { id: 1, name: 'Seattle, WA' },
@@ -120,9 +120,8 @@ export default function App() {
       const locations = await Location.with('people').get();
       setLocations(locations);
 
-      const people = await Person.with('location').get();
+      const people = await Person.with('location').with('groups').get();
       setPeople(people);
-      console.log(people)
 
       const person = await Person.where('name', 'Nora').first();
       setPerson(person);
@@ -147,7 +146,7 @@ export default function App() {
 
       <Text>People:</Text>
       {!!people.length && people.map(person => (
-        <Text key={person.id}>{person.name} - {person?.location?.name}</Text>
+        <Text key={person.id}>{person.name} - {person?.location?.name} - {!!person?.groups?.length && person.groups.map(group => group.name).join(', ')}</Text>
       ))}
 
       <View style={{ height: 10 }} />

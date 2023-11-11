@@ -479,28 +479,39 @@ export class Model {
 
   async belongsToMany<T extends Model>(
     this: T,
-    relatedModel: T,
+    relatedModel: typeof Model,
     joinTableName?: string, // This can be optional if the default naming convention is to be used
     foreignKey?: string,   // This can be optional and inferred from the table names
     otherKey?: string      // This can be optional and inferred from the table names
   ): Promise<Model[]> {
 
-    console.log('belongsToMany()', relatedModel.constructor.name, joinTableName, foreignKey, otherKey);
+    console.log('belongsToMany()', relatedModel, joinTableName, foreignKey, otherKey);
 
-    const relatedConstructor = relatedModel.constructor as typeof Model;
+    const relatedConstructor = (new relatedModel()).constructor as typeof Model;
     const currentConstructor = this.constructor as typeof Model;
+
+    console.log('relatedConstructor', relatedConstructor);
+    console.log('currentConstructor', currentConstructor);
 
     // Determine the names
     const relatedName = relatedConstructor.name.toLowerCase();
     const currentName = currentConstructor.name.toLowerCase();
+
+    console.log('relatedName', relatedName);
+    console.log('currentName', currentName);
   
     const relatedTableName = relatedConstructor.tableName;
     const currentTableName = currentConstructor.tableName;
 
+    console.log('relatedTableName', relatedTableName);
+    console.log('currentTableName', currentTableName);
+
     // If joinTableName is not provided, determine it based on the table names
     if (!joinTableName) {
-      [joinTableName] = [relatedTableName, currentTableName].sort().join('_');
+      joinTableName = [relatedTableName, currentTableName].sort().join('_');
     }
+
+    console.log('joinTableName', joinTableName);
   
     // Determine foreign keys if not provided
     if (!foreignKey) {
@@ -512,11 +523,10 @@ export class Model {
   
     // Use the ORM's methods to construct the query
     const instances = await relatedConstructor
-      .join('INNER', joinTableName, `${currentTableName}.id`, `${joinTableName}.${foreignKey}`)
-      .join('INNER', relatedTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`)
-      .where(`${currentTableName}.id`, '=', this.id)
+      .join('INNER', joinTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`)
+      .where(`${joinTableName}.${foreignKey}`, '=', this.id)
       .get();
-  
+      
     // Instantiate the related models with the result
     return instances;
   }
