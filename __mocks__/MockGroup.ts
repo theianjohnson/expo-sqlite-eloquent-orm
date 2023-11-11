@@ -7,7 +7,7 @@ export class MockGroup extends Model {
   static withTimestamps = false;
 
   people() {
-    const MockPersonInstance = new MockPerson() as unknown as Model;
-    return this.belongsToMany(MockPersonInstance);
+    const MockPersonInstance = new MockPerson() as Model;
+    return this.belongsToMany(MockPersonInstance, 'groups_people', 'groupId', 'personId');
   }
 }

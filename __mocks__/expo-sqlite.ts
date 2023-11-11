@@ -31,6 +31,7 @@ function findTableInSql(sql) {
 }
 
 function parseJoinClauses(sql) {
+  console.log('parseJoinClauses()', sql);
   const joins = [];
   const joinRegex = /JOIN (\w+) ON (\w+\.\w+) = (\w+\.\w+)/gi;
   let match;
@@ -41,6 +42,9 @@ function parseJoinClauses(sql) {
       secondTableColumn: match[3],
     });
   }
+
+  console.log('joins', joins)
+
   return joins;
 }
 

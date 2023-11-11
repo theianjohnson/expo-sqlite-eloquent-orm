@@ -18,7 +18,6 @@ let initialData = {
   ],
   groups_people: [
     { groupId: 1, personId: 1 },
-    { groupId: 1, personId: 4 },
     { groupId: 2, personId: 2 },
     { groupId: 2, personId: 3 },
   ],

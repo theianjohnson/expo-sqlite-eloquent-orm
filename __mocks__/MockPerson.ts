@@ -11,12 +11,12 @@ export class MockPerson extends Model {
   };
 
   location() {
-    const MockLocationInstance = new MockLocation() as unknown as Model;
+    const MockLocationInstance = new MockLocation() as Model;
     return this.belongsTo(MockLocationInstance, 'locationId');
   }
 
   groups() {
-    const MockGroupInstance = new MockGroup() as unknown as Model;
+    const MockGroupInstance = new MockGroup() as Model;
     return this.belongsToMany(MockGroupInstance, 'groups_people', 'personId', 'groupId');
   }
 }
