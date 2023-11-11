@@ -452,7 +452,7 @@ class Model {
   hasOne(relatedModel, foreignKey, localKey = 'id') {
     return __awaiter(this, void 0, void 0, function* () {
       if (!foreignKey) {
-        foreignKey = `${relatedModel.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
+        foreignKey = `${this.constructor.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
       }
 
       return yield relatedModel.where(foreignKey, '=', this[localKey]).first();
