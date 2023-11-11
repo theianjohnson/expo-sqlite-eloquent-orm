@@ -55,11 +55,7 @@ export class Model {
     }
   }
 
-    // Static methods that proxy to instance methods
-    static async get (): Promise<Model[]> {
-      return await new this().get()
-    }
-  
+    // Static methods that proxy to instance methods  
     static table<T extends Model>(this: new () => T, name: string): T {
       return new this().table(name)
     }
@@ -92,49 +88,70 @@ export class Model {
     static async find(id: number | string): Promise<Model | null> {
       return await new this().find(id)
     }
-  
-    static async insert (data: Record<string, any>): Promise<SQLResult> {
-      const now = new Date().toISOString()
 
-      const constructor = this as typeof Model;
+    static async insert(data: Record<string, any>): Promise<SQLResult> {
+      return await new this().insert(data);
+    }
 
-      // Add createdAt and updatedAt to the data if not provided
-      if (constructor.withTimestamps) {
-        data[constructor.createdAtColumn] = data[constructor.createdAtColumn] || now;
-        data[constructor.updatedAtColumn] = data[constructor.updatedAtColumn] || now;
+    async insert(data: Record<string, any>): Promise<SQLResult> {
+
+      const constructor = this.constructor as typeof Model;
+
+      if (!this.tableName) {
+        this.tableName = constructor.tableName;
       }
   
+      const now = new Date().toISOString();
       const fields = Object.keys(data);
-      const placeholders = fields.map(() => '?').join(', ');
   
       // Cast attributes for storage
       const valuesForStorage = fields.map(field => {
-        return this.prepareAttributeForStorage(field as keyof Casts, data[field]);
+        return constructor.prepareAttributeForStorage(field, data[field]);
       });
   
-      const sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
-      return await this.executeSql(sql, valuesForStorage);
+      // Add timestamps if applicable
+      if (constructor.withTimestamps) {
+        if (!data[constructor.createdAtColumn]) {
+          fields.push(constructor.createdAtColumn);
+          valuesForStorage.push(now);
+        }
+        if (!data[constructor.updatedAtColumn]) {
+          fields.push(constructor.updatedAtColumn);
+          valuesForStorage.push(now);
+        }
+      }
+
+      const placeholders = fields.map(() => '?').join(', ');
+  
+      const sql = `INSERT INTO ${this.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+      return await constructor.executeSql(sql, valuesForStorage);
     }
 
-    static async seed(data: Array<Record<string, any>>) {
-      // Create an instance and forward to the instance method
-      const instance = new this();
-      return await instance.seed(data);
+    // Static seed method
+    static async seed(data: Array<Record<string, any>>): Promise<void> {
+      console.log('static seed()');
+      // Forwarding to the instance method
+      await new this().seed(data);
     }
   
     async seed(data: Array<Record<string, any>>) {
-      const constructor = this.constructor as typeof Model;
-  
+      console.log('seed()');
+      // if (!this.tableName) {
+      //   throw new Error("Table name is not set for seeding.");
+      // }
+      
       // Check if the table already has data
       const existingData = await this.first();
       if (!existingData) {
         for (const item of data) {
-          await constructor.insert(item); // Use constructor to call static method
+          await this.insert(item); // Use constructor to get the correct static context
         }
       }
     }
   
     static async executeSql (sql: string, params: any[] = []): Promise<SQLResult> {
+      console.log('executeSql()', sql, params);
+
       return await new Promise((resolve, reject) => {
         this.db.transaction(tx => {
           tx.executeSql(sql, params, (_, result) => {
@@ -316,9 +333,14 @@ export class Model {
   }
 
   getSql(): { query: string, params: Array<string | number | boolean | null> } {
-    const constructor = this.constructor as typeof Model
+    console.log('getSql()', this);
 
-    let query = `SELECT ${this.clauses.select} FROM ${constructor.tableName}`
+    if (!this.tableName) {
+      const constructor = this.constructor as typeof Model
+      this.tableName = constructor.tableName;
+    }
+
+    let query = `SELECT ${this.clauses.select} FROM ${this.tableName}`
     const params: Array<string | number | boolean | null> = []
 
     // Add JOIN clauses if any
@@ -351,10 +373,19 @@ export class Model {
     return { query, params };
   }
 
+  static async get (): Promise<Model[]> {
+    console.log('static get()');
+    return await new this().get()
+  }
+
   async get(): Promise<Model[]> {
+    console.log('get()');
+
     const constructor = this.constructor as typeof Model
 
     const { query, params } = this.getSql();
+
+    console.log('query', query);
 
     // Execute the SQL query
     const result = await constructor.executeSql(query, params)
@@ -392,6 +423,7 @@ export class Model {
   }
 
   async first(): Promise<Model | null> {
+    console.log('first()', this.tableName);
     this.limit(1)
     const results = await this.get()
     return results[0] || null

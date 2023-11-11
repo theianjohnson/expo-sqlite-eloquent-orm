@@ -45,6 +45,8 @@ const migrations = {
   '1699142748_init_groups_people': `
     CREATE TABLE IF NOT EXISTS groups_people (
       id INTEGER PRIMARY KEY NOT NULL,
+      createdAt DATETIME NOT NULL,
+      updatedAt DATETIME NOT NULL,
       groupId INTEGER NOT NULL,
       personId INTEGER NOT NULL
     );
@@ -104,13 +106,13 @@ export default function App() {
   // Run migrations and seed data
   useEffect(() => {
     (async() => {
-      // await Migration.runMigrations(migrations);
-      // await Group.seed(seedData.groups);
-      // await Location.seed(seedData.locations);
-      // await Person.seed(seedData.people);
+      await Migration.runMigrations(migrations);
+      await Group.seed(seedData.groups);
+      await Location.seed(seedData.locations);
+      await Person.seed(seedData.people);
 
       // You can also use the base Model class and provide the table name manually
-      // await Model.table('groups_people').seed(seedData.groups_people);
+      await Model.table('groups_people').seed(seedData.groups_people);
 
       const location = await Location.with('people').find(1);
       setLocation(location);

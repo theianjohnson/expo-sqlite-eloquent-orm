@@ -75,12 +75,7 @@ class Model {
       withRelations: []
     };
   }
-  // Static methods that proxy to instance methods
-  static get() {
-    return __awaiter(this, void 0, void 0, function* () {
-      return yield new this().get();
-    });
-  }
+  // Static methods that proxy to instance methods  
   static table(name) {
     return new this().table(name);
   }
@@ -110,38 +105,54 @@ class Model {
   }
   static insert(data) {
     return __awaiter(this, void 0, void 0, function* () {
-      const now = new Date().toISOString();
-      const constructor = this;
-      // Add createdAt and updatedAt to the data if not provided
-      if (constructor.withTimestamps) {
-        data[constructor.createdAtColumn] = data[constructor.createdAtColumn] || now;
-        data[constructor.updatedAtColumn] = data[constructor.updatedAtColumn] || now;
-      }
-      const fields = Object.keys(data);
-      const placeholders = fields.map(() => '?').join(', ');
-      // Cast attributes for storage
-      const valuesForStorage = fields.map(field => {
-        return this.prepareAttributeForStorage(field, data[field]);
-      });
-      const sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
-      return yield this.executeSql(sql, valuesForStorage);
+      return yield new this().insert(data);
     });
   }
+  insert(data) {
+    return __awaiter(this, void 0, void 0, function* () {
+      const constructor = this.constructor;
+      if (!this.tableName) {
+        this.tableName = constructor.tableName;
+      }
+      const now = new Date().toISOString();
+      const fields = Object.keys(data);
+      // Cast attributes for storage
+      const valuesForStorage = fields.map(field => {
+        return constructor.prepareAttributeForStorage(field, data[field]);
+      });
+      // Add timestamps if applicable
+      if (constructor.withTimestamps) {
+        if (!data[constructor.createdAtColumn]) {
+          fields.push(constructor.createdAtColumn);
+          valuesForStorage.push(now);
+        }
+        if (!data[constructor.updatedAtColumn]) {
+          fields.push(constructor.updatedAtColumn);
+          valuesForStorage.push(now);
+        }
+      }
+      const placeholders = fields.map(() => '?').join(', ');
+      const sql = `INSERT INTO ${this.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+      return yield constructor.executeSql(sql, valuesForStorage);
+    });
+  }
+  // Static seed method
   static seed(data) {
     return __awaiter(this, void 0, void 0, function* () {
-      // Create an instance and forward to the instance method
-      const instance = new this();
-      return yield instance.seed(data);
+      // Forwarding to the instance method
+      yield new this().seed(data);
     });
   }
   seed(data) {
     return __awaiter(this, void 0, void 0, function* () {
-      const constructor = this.constructor;
+      // if (!this.tableName) {
+      //   throw new Error("Table name is not set for seeding.");
+      // }
       // Check if the table already has data
       const existingData = yield this.first();
       if (!existingData) {
         for (const item of data) {
-          yield constructor.insert(item); // Use constructor to call static method
+          yield this.insert(item); // Use constructor to get the correct static context
         }
       }
     });
@@ -333,8 +344,11 @@ class Model {
     });
   }
   getSql() {
-    const constructor = this.constructor;
-    let query = `SELECT ${this.clauses.select} FROM ${constructor.tableName}`;
+    if (!this.tableName) {
+      const constructor = this.constructor;
+      this.tableName = constructor.tableName;
+    }
+    let query = `SELECT ${this.clauses.select} FROM ${this.tableName}`;
     const params = [];
     // Add JOIN clauses if any
     if (this.clauses.joins.length > 0) {
@@ -363,6 +377,11 @@ class Model {
       query,
       params
     };
+  }
+  static get() {
+    return __awaiter(this, void 0, void 0, function* () {
+      return yield new this().get();
+    });
   }
   get() {
     return __awaiter(this, void 0, void 0, function* () {

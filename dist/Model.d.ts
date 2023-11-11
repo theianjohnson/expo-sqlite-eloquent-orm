@@ -40,7 +40,6 @@ export declare class Model {
     clauses: Clauses;
     [key: string]: any;
     constructor(attributes?: ModelAttributes);
-    static get(): Promise<Model[]>;
     static table<T extends Model>(this: new () => T, name: string): T;
     static select<T extends Model>(this: new () => T, fields?: string | string[]): T;
     static join<T extends Model>(this: new () => T, type: 'INNER' | 'LEFT' | 'RIGHT', table: string, firstKey: string, secondKey: string): T;
@@ -50,6 +49,7 @@ export declare class Model {
     static with<T extends Model>(this: new () => T, relation: string): T;
     static find(id: number | string): Promise<Model | null>;
     static insert(data: Record<string, any>): Promise<SQLResult>;
+    insert(data: Record<string, any>): Promise<SQLResult>;
     static seed(data: Array<Record<string, any>>): Promise<void>;
     seed(data: Array<Record<string, any>>): Promise<void>;
     static executeSql(sql: string, params?: any[]): Promise<SQLResult>;
@@ -69,6 +69,7 @@ export declare class Model {
         query: string;
         params: Array<string | number | boolean | null>;
     };
+    static get(): Promise<Model[]>;
     get(): Promise<Model[]>;
     first(): Promise<Model | null>;
     update(attributes: Partial<ModelAttributes>): Promise<SQLResult>;

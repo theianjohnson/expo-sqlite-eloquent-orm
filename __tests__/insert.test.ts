@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { Model } from '../src/Model';
 import { MockPerson } from '../__mocks__/MockPerson';
 import { MockGroup } from '../__mocks__/MockGroup';
 import { mockDataStore, resetMockDataStore } from '../__mocks__/mockDataStore';
@@ -36,5 +37,31 @@ describe('insert', () => {
 
     expect(result.insertId).toBe(expectedInsertId);
     expect(mockDataStore.groups).toContainEqual(expect.objectContaining(newGroupData));
+  });
+
+  it('should insert a new record into a specified table', async () => {
+    // Example data for inserting into the 'groups_people' table
+    const newGroupPersonData = { groupId: 1, personId: 2 };
+    const expectedInsertId = mockDataStore.groups_people.length + 1;
+
+    // Insert using Model.table().insert()
+    const result = await Model.table('groups_people').insert(newGroupPersonData);
+
+    // Check the insertId and if the data is correctly inserted
+    expect(result.insertId).toBe(expectedInsertId);
+    expect(mockDataStore.groups_people).toContainEqual(expect.objectContaining(newGroupPersonData));
+  });
+
+  it('should insert another new record into a different specified table', async () => {
+    // Additional test data for a different table, e.g., 'locations'
+    const newLocationData = { name: 'New Location', address: '123 Main St' };
+    const expectedInsertId = mockDataStore.locations.length + 1;
+
+    // Insert using Model.table().insert()
+    const result = await Model.table('locations').insert(newLocationData);
+
+    // Check the insertId and if the data is correctly inserted
+    expect(result.insertId).toBe(expectedInsertId);
+    expect(mockDataStore.locations).toContainEqual(expect.objectContaining(newLocationData));
   });
 });

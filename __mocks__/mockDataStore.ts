@@ -29,3 +29,7 @@ export let mockDataStore = { ...initialData };
 export function resetMockDataStore() {
   mockDataStore = JSON.parse(JSON.stringify(initialData));
 }
+
+export function clearMockDataStore(table: string) {
+  mockDataStore = JSON.parse(JSON.stringify(initialData));
+}
