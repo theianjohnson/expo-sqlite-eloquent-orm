@@ -455,8 +455,8 @@ export class Model {
   // Relationship methods
   async hasOne<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model | null> {
     if (!foreignKey) {
-      console.log('hasOne auto foreignKey', `${relatedModel.name.toLowerCase()}Id`);
-      foreignKey = `${relatedModel.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
+      console.log('hasOne auto foreignKey', `${this.constructor.name.toLowerCase()}Id`);
+      foreignKey = `${this.constructor.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
     }
     return await relatedModel.where(foreignKey, '=', this[localKey]).first();
   }
