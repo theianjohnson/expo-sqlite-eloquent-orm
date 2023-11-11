@@ -27,6 +27,54 @@ yarn add expo-sqlite-eloquent-orm
 * npm run start
 * Example code is all in the App.js file, https://github.com/theianjohnson/expo-sqlite-eloquent-orm/blob/main/example/App.js
 
+## Model Class API
+
+### Static Methods
+
+| Method | Description | Return Type | Parameters |
+| ------ | ----------- | ----------- | ---------- |
+| `table` | Sets the table name for queries. | `Model` | `name: string` |
+| `select` | Specifies the fields to select in a query. | `Model` | `fields: string \| string[]` |
+| `join` | Adds a join clause to the query. | `Model` | `type: 'INNER' \| 'LEFT' \| 'RIGHT', table: string, firstKey: string, secondKey: string` |
+| `where` | Adds a where clause to the query. | `Model` | `column: string, operatorOrValue: any, value?: any` |
+| `orderBy` | Adds an order by clause to the query. | `Model` | `column: string, direction: 'ASC' \| 'DESC'` |
+| `limit` | Sets a limit on the number of records returned. | `Model` | `number: number` |
+| `with` | Specifies relations to include in the query results. | `Model` | `relation: string` |
+| `find` | Finds a record by its ID. | `Promise<Model \| null>` | `id: number \| string` |
+| `insert` | Inserts a new record into the database. | `Promise<SQLResult>` | `data: Record<string, any>` |
+| `seed` | Seeds data into the database if the table is empty. | `Promise<void>` | `data: Array<Record<string, any>>` |
+| `executeSql` | Executes a custom SQL query. | `Promise<SQLResult>` | `sql: string, params: any[]` |
+
+### Instance Methods
+
+| Method | Description | Return Type | Parameters |
+| ------ | ----------- | ----------- | ---------- |
+| `insert` | Instance method to insert a new record. | `Promise<SQLResult>` | `data: Record<string, any>` |
+| `save` | Saves the current instance to the database. | `Promise<SQLResult>` | - |
+| `delete` | Deletes the current instance from the database. | `Promise<SQLResult>` | - |
+| `get` | Retrieves records based on the current query. | `Promise<Model[]>` | - |
+| `first` | Retrieves the first record based on the current query. | `Promise<Model \| null>` | - |
+| `update` | Updates the current instance in the database. | `Promise<SQLResult>` | `attributes: Partial<ModelAttributes>` |
+| `hasOne` | Defines a has-one relationship. | `Promise<Model \| null>` | `relatedModel: Model, foreignKey?: string, localKey: string = 'id'` |
+| `hasMany` | Defines a has-many relationship. | `Promise<Model[]>` | `relatedModel: Model, foreignKey?: string, localKey: string = 'id'` |
+| `belongsTo` | Defines a belongs-to relationship. | `Promise<Model \| null>` | `relatedModel: Model, foreignKey: string, otherKey: string = 'id'` |
+| `belongsToMany` | Defines a belongs-to-many relationship. | `Promise<Model[]>` | `relatedModel: typeof Model, joinTableName?: string, foreignKey?: string, otherKey?: string` |
+
+### Utility Methods
+
+| Method | Description | Return Type | Parameters |
+| ------ | ----------- | ----------- | ---------- |
+| `cleanObject` | Cleans the instance by applying casts and removing clauses. | `T` | `object: T` |
+
+### Types and Interfaces
+
+- `Casts`: Record of attribute types (`'number' \| 'boolean' \| 'string' \| 'json'`).
+- `Clauses`: Object representing different clauses in a query.
+- `ModelAttributes`: Record of any type representing model attributes.
+- `SQLResult`: Interface representing the result of an SQL query.
+
+> Note: Some methods are simplified for brevity. Consult the source code for detailed implementation.
+
 ## Quick Start
 
 To get started with `expo-sqlite-eloquent-orm`, you'll need to setup your initial migrations and define your models.
@@ -222,7 +270,6 @@ const postUser = await post.user;
 ````
 
 ## To Do
-[] Many-to-many relationships
 [] whereRaw
 [] Bulk eager loading, currently eager loading is n+1
 [] Reactivity? Caching with automatic invalidation?
