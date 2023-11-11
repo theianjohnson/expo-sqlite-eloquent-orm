@@ -60,12 +60,6 @@ yarn add expo-sqlite-eloquent-orm
 | `belongsTo` | Defines a belongs-to relationship. | `Promise<Model \| null>` | `relatedModel: Model, foreignKey: string, otherKey: string = 'id'` |
 | `belongsToMany` | Defines a belongs-to-many relationship. | `Promise<Model[]>` | `relatedModel: typeof Model, joinTableName?: string, foreignKey?: string, otherKey?: string` |
 
-### Utility Methods
-
-| Method | Description | Return Type | Parameters |
-| ------ | ----------- | ----------- | ---------- |
-| `cleanObject` | Cleans the instance by applying casts and removing clauses. | `T` | `object: T` |
-
 ### Types and Interfaces
 
 - `Casts`: Record of attribute types (`'number' \| 'boolean' \| 'string' \| 'json'`).
