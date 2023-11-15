@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Model } from '../src/Model';
-import { MockPerson } from '../__mocks__/MockPerson';
+import { Person } from '../__mocks__/Person';
 import { mockDataStore, resetMockDataStore } from '../__mocks__/mockDataStore';
 
 describe('ORM Model Tests', () => {
@@ -12,7 +12,7 @@ describe('ORM Model Tests', () => {
     mockDataStore.groups_people = [];
   });
 
-  describe('MockPerson Model', () => {
+  describe('Person Model', () => {
     it('should seed data correctly when called statically', async () => {
       
       const seedData = [
@@ -20,7 +20,7 @@ describe('ORM Model Tests', () => {
         { name: 'Jane Doe', age: 25 }
       ];
 
-      await MockPerson.seed(seedData);
+      await Person.seed(seedData);
 
       // Verify that the data is seeded correctly
       expect(mockDataStore.people.length).toBe(2);

@@ -1,6 +1,6 @@
 // find.test.ts
-import { MockLocation } from '../__mocks__/MockLocation';
-import { MockPerson } from '../__mocks__/MockPerson';
+import { Location } from '../__mocks__/Location';
+import { Person } from '../__mocks__/Person';
 import { mockDataStore, resetMockDataStore } from '../__mocks__/mockDataStore';
 
 describe('Model find method', () => {
@@ -10,7 +10,7 @@ describe('Model find method', () => {
 
   it('should retrieve a single location by ID', async () => {
     const locationId = 1;
-    const location = await MockLocation.find(locationId);
+    const location = await Location.find(locationId);
 
     expect(location).toBeDefined();
     expect(location.id).toBe(locationId);
@@ -18,7 +18,7 @@ describe('Model find method', () => {
 
   it('should load related people for a location', async () => {
     const locationId = 1;
-    const location = await MockLocation.with('people').find(locationId);
+    const location = await Location.with('people').find(locationId);
 
     expect(location.people).toBeDefined();
     expect(Array.isArray(location.people)).toBe(true);

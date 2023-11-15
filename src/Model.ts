@@ -1,8 +1,8 @@
 import * as SQLite from 'expo-sqlite'
 
-type Casts = Record<string, 'number' | 'boolean' | 'string' | 'json'>
+type Casts = {[key: string]: 'number' | 'boolean' | 'string' | 'json'}
 
-interface Clauses {
+type Clauses = {
   select: string
   joins: Array<{
     type: 'INNER' | 'LEFT' | 'RIGHT',
@@ -18,7 +18,7 @@ interface Clauses {
 
 type ModelAttributes = Record<string, any>
 
-interface SQLResult {
+type SQLResult = {
   insertId?: number
   rowsAffected: number
   rows: {
@@ -469,7 +469,7 @@ export class Model {
     return await relatedModel.where(foreignKey, '=', this[localKey]).get();
   }
 
-  async belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey: string = 'id'): Promise<Model | null> {
+  async belongsTo<T extends Model>(relatedModel: T, foreignKey?: string, otherKey: string = 'id'): Promise<Model | null> {
     if (!foreignKey) {
       console.log('belongsTo foreignKey', `${relatedModel.name.toLowerCase()}Id`);
       foreignKey = `${relatedModel.name.toLowerCase()}Id`;

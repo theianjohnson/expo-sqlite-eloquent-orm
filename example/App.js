@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Button, StyleSheet, Text, View } from 'react-native';
 import { Model, Migration } from './local-version-of-expo-sqlite-eloquent-orm';
 
 // Define some models
@@ -24,6 +24,9 @@ class Location extends Model {
 
 class Person extends Model {
   static tableName = 'people';
+  static $casts = {
+    age: 'number',
+  };
 
   location() {
     return this.belongsTo(Location);
@@ -79,8 +82,9 @@ const seedData = {
   groups_people: [
     { groupId: 1, personId: 1 },
     { groupId: 1, personId: 4 },
-    { groupId: 2, personId: 2 },
+    { groupId: 3, personId: 4 },
     { groupId: 2, personId: 1 },
+    { groupId: 3, personId: 2 },
   ],
   locations: [
     { id: 1, name: 'Seattle, WA' },
@@ -102,6 +106,8 @@ export default function App() {
   const [locations, setLocations] = useState([]);
   const [people, setPeople] = useState([]);
   const [person, setPerson] = useState(null);
+
+  const [newGroupPeople, setNewGroupPeople] = useState([]);
 
   // Run migrations and seed data
   useEffect(() => {
@@ -125,8 +131,16 @@ export default function App() {
 
       const person = await Person.where('name', 'Nora').first();
       setPerson(person);
+
+      // const newGroup = new Group();
+      // setNewGroupPeople(newGroup.people);
     })();
-  }, [])
+  }, []);
+
+  const deleteDatabase = async () => {
+    await Model.db.closeAsync();
+    await Model.db.deleteAsync();
+  }
 
   return (
     <View style={styles.container}>
@@ -155,6 +169,10 @@ export default function App() {
       {!!person && (
         <Text>{person.name}</Text>
       )}
+
+      <View style={{ height: 10 }} />
+
+      <Button onPress={deleteDatabase} title="Delete Database" />
 
       <StatusBar style="auto" />
     </View>

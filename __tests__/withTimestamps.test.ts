@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { MockPerson } from '../__mocks__/MockPerson';
-import { MockGroup } from '../__mocks__/MockGroup';
+import { Person } from '../__mocks__/Person';
+import { Group } from '../__mocks__/Group';
 import { mockDataStore, resetMockDataStore } from '../__mocks__/mockDataStore';
 
 describe('withTimestamps', () => {
@@ -9,8 +9,8 @@ describe('withTimestamps', () => {
   });
 
   it('should set createdAt and updatedAt on insert when withTimestamps is true', async () => {
-    MockPerson.withTimestamps = true;
-    const person = new MockPerson({ name: 'Test', age: 30 });
+    Person.withTimestamps = true;
+    const person = new Person({ name: 'Test', age: 30 });
     await person.save();
 
     expect(person.createdAt).toBeDefined();
@@ -18,8 +18,8 @@ describe('withTimestamps', () => {
   });
 
   it('should update updatedAt on save when withTimestamps is true', async () => {
-    MockPerson.withTimestamps = true;
-    const person = new MockPerson({ id: 1, name: 'Updated Name' });
+    Person.withTimestamps = true;
+    const person = new Person({ id: 1, name: 'Updated Name' });
     await person.save();
 
     expect(person.updatedAt).toBeDefined();
@@ -27,8 +27,8 @@ describe('withTimestamps', () => {
   });
 
   it('should not set createdAt and updatedAt on insert when withTimestamps is false', async () => {
-    MockPerson.withTimestamps = false;
-    const person = new MockPerson({ name: 'Test', age: 30 });
+    Person.withTimestamps = false;
+    const person = new Person({ name: 'Test', age: 30 });
     await person.save();
 
     expect(person.createdAt).toBeUndefined();
@@ -43,40 +43,40 @@ describe('withTimestamps custom columns', () => {
   });
 
   it('should set custom createdAt and updatedAt on insert when withTimestamps is true', async () => {
-    MockPerson.withTimestamps = true;
-    MockPerson.createdAtColumn = 'created_at';
-    MockPerson.updatedAtColumn = 'updated_at';
+    Person.withTimestamps = true;
+    Person.createdAtColumn = 'created_at';
+    Person.updatedAtColumn = 'updated_at';
 
-    const person = new MockPerson({ name: 'Test', age: 30 });
+    const person = new Person({ name: 'Test', age: 30 });
     await person.save();
 
-    expect(person[MockPerson.createdAtColumn]).toBeDefined();
-    expect(person[MockPerson.updatedAtColumn]).toBeDefined();
+    expect(person[Person.createdAtColumn]).toBeDefined();
+    expect(person[Person.updatedAtColumn]).toBeDefined();
   });
 
   it('should update custom updatedAt on save when withTimestamps is true', async () => {
-    MockPerson.withTimestamps = true;
-    MockPerson.createdAtColumn = 'created_at';
-    MockPerson.updatedAtColumn = 'updated_at';
+    Person.withTimestamps = true;
+    Person.createdAtColumn = 'created_at';
+    Person.updatedAtColumn = 'updated_at';
 
-    const person = new MockPerson({ id: 1, name: 'Updated Name' });
-    const originalUpdatedAt = person[MockPerson.updatedAtColumn];
+    const person = new Person({ id: 1, name: 'Updated Name' });
+    const originalUpdatedAt = person[Person.updatedAtColumn];
     await person.save();
 
-    expect(person[MockPerson.updatedAtColumn]).toBeDefined();
-    expect(person[MockPerson.updatedAtColumn]).not.toBe(originalUpdatedAt);
+    expect(person[Person.updatedAtColumn]).toBeDefined();
+    expect(person[Person.updatedAtColumn]).not.toBe(originalUpdatedAt);
   });
 
   it('should not set custom createdAt and updatedAt on insert when withTimestamps is false', async () => {
-    MockGroup.withTimestamps = false;
-    MockGroup.createdAtColumn = 'creation_date';
-    MockGroup.updatedAtColumn = 'modification_date';
+    Group.withTimestamps = false;
+    Group.createdAtColumn = 'creation_date';
+    Group.updatedAtColumn = 'modification_date';
     
-    const group = new MockGroup({ name: 'New Group' });
+    const group = new Group({ name: 'New Group' });
     await group.save();
 
-    expect(group[MockGroup.createdAtColumn]).toBeUndefined();
-    expect(group[MockGroup.updatedAtColumn]).toBeUndefined();
+    expect(group[Group.createdAtColumn]).toBeUndefined();
+    expect(group[Group.updatedAtColumn]).toBeUndefined();
   });
 });
 
@@ -86,7 +86,7 @@ describe('withoutTimestamps', () => {
   });
 
   it('should not set timestamps on insert when withTimestamps is false', async () => {
-    const group = new MockGroup({ name: 'New Group' });
+    const group = new Group({ name: 'New Group' });
     await group.save();
 
     expect(group.createdAt).toBeUndefined();

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Model } from '../src/Model';
-import { MockPerson } from '../__mocks__/MockPerson';
-import { MockGroup } from '../__mocks__/MockGroup';
+import { Person } from '../__mocks__/Person';
+import { Group } from '../__mocks__/Group';
 import { mockDataStore, resetMockDataStore } from '../__mocks__/mockDataStore';
 
 describe('insert', () => {
@@ -10,7 +10,7 @@ describe('insert', () => {
   });
 
   it('should create a new person and save', async () => {
-    const newPerson = new MockPerson({ name: 'John', groupId: 1 });
+    const newPerson = new Person({ name: 'John', groupId: 1 });
     const expectedInsertId = mockDataStore.people.length + 1;
 
     const result = await newPerson.save();
@@ -23,7 +23,7 @@ describe('insert', () => {
     const newPersonData = { name: 'John', groupId: 1 };
     const expectedInsertId = mockDataStore.people.length + 1;
 
-    const result = await MockPerson.insert(newPersonData);
+    const result = await Person.insert(newPersonData);
 
     expect(result.insertId).toBe(expectedInsertId);
     expect(mockDataStore.people).toContainEqual(expect.objectContaining(newPersonData));
@@ -33,7 +33,7 @@ describe('insert', () => {
     const newGroupData = { name: 'New Group' };
     const expectedInsertId = mockDataStore.groups.length + 1;
 
-    const result = await MockGroup.insert(newGroupData);
+    const result = await Group.insert(newGroupData);
 
     expect(result.insertId).toBe(expectedInsertId);
     expect(mockDataStore.groups).toContainEqual(expect.objectContaining(newGroupData));

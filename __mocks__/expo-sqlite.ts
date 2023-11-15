@@ -58,8 +58,11 @@ function applyJoins(rows, joins) {
 
       // Find matching rows in the joined table
       const matchingRows = mockDataStore[join.joinedTable].filter(relatedRow => {
-        return String(row[firstColumn]) === String(relatedRow[secondColumn]);
+        console.log(`Comparing ${row[secondColumn]} with ${relatedRow[firstColumn]}`, row, relatedRow)
+        return String(row[secondColumn]) === String(relatedRow[firstColumn]);
       });
+
+      console.log('matchingRows', matchingRows);
 
       // Merge all matching rows data
       matchingRows.forEach(match => {
@@ -79,6 +82,15 @@ mockExecuteSql.mockImplementation((sql, params, success, failure) => {
     const joins = parseJoinClauses(sql);
 
     if (upperSql.startsWith('SELECT')) {
+      rows = mockDataStore[table];
+
+      // Apply the JOIN logic if joins are present
+      if (joins.length > 0) {
+        rows = applyJoins(rows, joins);
+      }
+
+      console.log('rows', rows);
+
       // Implementing WHERE clause parsing to filter the result set
       const whereMatch = sql.match(/WHERE (\w+\.\w+|\w+) = \?/i);
       let whereColumn, whereValue;
@@ -87,16 +99,10 @@ mockExecuteSql.mockImplementation((sql, params, success, failure) => {
         whereValue = params[0]; // Assuming there's only one parameter for the WHERE clause
       }
 
-      // Fetching and filtering rows from the primary table
-      rows = mockDataStore[table].filter(row => {
+      rows = rows.filter(row => {
         // If a WHERE clause is present, filter the rows based on the condition
         return whereColumn ? String(row[whereColumn]) === String(whereValue) : true;
       });
-
-      // Apply the JOIN logic if joins are present
-      if (joins.length > 0) {
-        rows = applyJoins(rows, joins);
-      }
 
       success(undefined, {
         rows: {
