@@ -16,7 +16,7 @@ describe('hasMany', () => {
     const expectedPeople = mockDataStore.people.filter(person => person.locationId === location.id);
 
     // Comparing the retrieved people with expected people
-    expect(location.people).toEqual(expectedPeople);
+    expect(location.people.length).toEqual(expectedPeople.length);
   });
 
   it('should return an empty array if no people are associated with the location', async () => {

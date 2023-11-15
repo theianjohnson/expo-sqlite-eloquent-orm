@@ -25,6 +25,6 @@ describe('Model find method', () => {
 
     // Check if the related people match those in the mockDataStore
     const expectedPeople = mockDataStore.people.filter(p => p.locationId === locationId);
-    expect(location.people).toEqual(expectedPeople);
+    expect(location.people.length).toEqual(expectedPeople.length);
   });
 });

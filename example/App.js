@@ -107,7 +107,7 @@ export default function App() {
   const [people, setPeople] = useState([]);
   const [person, setPerson] = useState(null);
 
-  const [newGroupPeople, setNewGroupPeople] = useState([]);
+  const [newGroupPeople, setNewGroupPeople] = useState(null);
 
   // Run migrations and seed data
   useEffect(() => {
@@ -120,21 +120,20 @@ export default function App() {
       // You can also use the base Model class and provide the table name manually
       await Model.table('groups_people').seed(seedData.groups_people);
 
-      // const location = await Location.with('people').find(1);
-      // setLocation(location);
+      const location = await Location.with('people').find(1);
+      setLocation(location);
 
-      // const locations = await Location.with('people').get();
-      // setLocations(locations);
+      const locations = await Location.with('people').get();
+      setLocations(locations);
 
-      // const people = await Person.with('location').with('groups').get();
-      // setPeople(people);
+      const people = await Person.with('location').with('groups').get();
+      setPeople(people);
 
-      // const person = await Person.where('name', 'Nora').first();
-      // setPerson(person);
+      const person = await Person.where('name', 'Nora').first();
+      setPerson(person);
 
-      const newGroups = await Group.with('people').get();
-      console.log('newGroup.people', newGroups[0].people);
-      // setNewGroupPeople(newGroup.people);
+      const newGroup = new Group();
+      setNewGroupPeople(newGroup.people);
     })();
   }, []);
 

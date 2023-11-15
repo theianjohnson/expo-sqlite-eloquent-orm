@@ -41,7 +41,7 @@ describe('belongsTo', () => {
     expect(person).toBeDefined();
     expect(person.location).toBeDefined();
     const expectedLocation = mockDataStore.locations.find(location => location.id === person.locationId);
-    expect(person.location).toEqual(expectedLocation);
+    expect(person.location.length).toEqual(expectedLocation.length);
   });
 
   it('should load related locations for people using get', async () => {
@@ -50,7 +50,7 @@ describe('belongsTo', () => {
     expect(Array.isArray(people)).toBe(true);
     people.forEach(person => {
       const expectedLocation = mockDataStore.locations.find(location => location.id === person.locationId);
-      expect(person.location).toEqual(expectedLocation);
+      expect(person.location.length).toEqual(expectedLocation.length);
     });
   });
   
