@@ -66,14 +66,34 @@ const SQLite = __importStar(require("expo-sqlite"));
 class Model {
   constructor(attributes = {}) {
     Object.assign(this, attributes);
-    this.clauses = {
-      select: '*',
-      joins: [],
-      where: [],
-      orderBy: null,
-      limit: null,
-      withRelations: []
+    this.__private = {
+      clauses: {
+        select: '*',
+        joins: [],
+        where: [],
+        orderBy: null,
+        limit: null,
+        withRelations: []
+      }
     };
+    return new Proxy(this, {
+      get: (target, prop, receiver) => {
+        var _a, _b;
+        if (typeof prop === 'string') {
+          if (typeof target[prop] === 'function' && !['table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) && !((_b = target.__private.clauses) === null || _b === void 0 ? void 0 : _b.withRelations.includes(prop))) {
+            const relationMethods = target.getRelationMethods();
+            if (relationMethods.includes(prop)) {
+              return undefined;
+            }
+          }
+        }
+        return Reflect.get(target, prop, receiver);
+      }
+    });
+  }
+  getRelationMethods() {
+    const proto = Object.getPrototypeOf(this);
+    return Object.getOwnPropertyNames(proto).filter(prop => prop !== 'constructor' && typeof this[prop] === 'function');
   }
   // Static methods that proxy to instance methods  
   static table(name) {
@@ -225,11 +245,11 @@ class Model {
     return this;
   }
   select(fields = '*') {
-    this.clauses.select = Array.isArray(fields) ? fields.join(', ') : fields;
+    this.__private.clauses.select = Array.isArray(fields) ? fields.join(', ') : fields;
     return this;
   }
   join(type, table, firstKey, secondKey) {
-    this.clauses.joins.push({
+    this.__private.clauses.joins.push({
       type,
       table,
       firstKey,
@@ -239,13 +259,13 @@ class Model {
   }
   where(column, operatorOrValue, value) {
     if (value === undefined) {
-      this.clauses.where.push({
+      this.__private.clauses.where.push({
         column,
         operator: '=',
         value: operatorOrValue
       });
     } else {
-      this.clauses.where.push({
+      this.__private.clauses.where.push({
         column,
         operator: operatorOrValue,
         value
@@ -254,18 +274,18 @@ class Model {
     return this;
   }
   orderBy(column, direction = 'ASC') {
-    this.clauses.orderBy = {
+    this.__private.clauses.orderBy = {
       column,
       direction
     };
     return this;
   }
   limit(number) {
-    this.clauses.limit = number;
+    this.__private.clauses.limit = number;
     return this;
   }
   with(relation) {
-    this.clauses.withRelations.push(relation);
+    this.__private.clauses.withRelations.push(relation);
     return this;
   }
   find(id) {
@@ -325,8 +345,8 @@ class Model {
       let sql;
       const params = [];
       // If there are WHERE clauses, use them to build the query
-      if (((_b = (_a = this.clauses) === null || _a === void 0 ? void 0 : _a.where) === null || _b === void 0 ? void 0 : _b.length) > 0) {
-        const whereConditions = this.clauses.where.map(clause => {
+      if (((_b = (_a = this.__private.clauses) === null || _a === void 0 ? void 0 : _a.where) === null || _b === void 0 ? void 0 : _b.length) > 0) {
+        const whereConditions = this.__private.clauses.where.map(clause => {
           params.push(clause.value);
           return `${clause.column} ${clause.operator} ?`;
         });
@@ -348,30 +368,30 @@ class Model {
       const constructor = this.constructor;
       this.tableName = constructor.tableName;
     }
-    let query = `SELECT ${this.clauses.select} FROM ${this.tableName}`;
+    let query = `SELECT ${this.__private.clauses.select} FROM ${this.tableName}`;
     const params = [];
     // Add JOIN clauses if any
-    if (this.clauses.joins.length > 0) {
-      const joinClauses = this.clauses.joins.map(joinClause => {
+    if (this.__private.clauses.joins.length > 0) {
+      const joinClauses = this.__private.clauses.joins.map(joinClause => {
         return `${joinClause.type} JOIN ${joinClause.table} ON ${joinClause.firstKey} = ${joinClause.secondKey}`;
       }).join(' ');
       query += ` ${joinClauses}`;
     }
     // Add WHERE clauses if any
-    if (this.clauses.where.length > 0) {
-      const whereClauses = this.clauses.where.map(clause => {
+    if (this.__private.clauses.where.length > 0) {
+      const whereClauses = this.__private.clauses.where.map(clause => {
         params.push(clause.value);
         return `${clause.column} ${clause.operator} ?`;
       }).join(' AND ');
       query += ` WHERE ${whereClauses}`;
     }
     // Add ORDER BY clause if set
-    if (this.clauses.orderBy) {
+    if (this.__private.clauses.orderBy) {
       query += ` ORDER BY ${this.clauses.orderBy.column} ${this.clauses.orderBy.direction}`;
     }
     // Add LIMIT clause if set
-    if (this.clauses.limit !== null) {
-      query += ` LIMIT ${this.clauses.limit}`;
+    if (this.__private.clauses.limit !== null) {
+      query += ` LIMIT ${this.__private.clauses.limit}`;
     }
     return {
       query,
@@ -396,11 +416,12 @@ class Model {
 
       const instances = result.rows._array.map(row => {
         const instance = new constructor(row);
+        instance.__private.clauses.withRelations = this.__private.clauses.withRelations;
         return this.cleanObject(instance);
       });
       // Load relationships if any are specified
 
-      for (const relationName of this.clauses.withRelations) {
+      for (const relationName of this.__private.clauses.withRelations) {
         const relation = this[relationName];
         if (typeof relation === 'function') {
           // Load the relation data for each instance
@@ -414,6 +435,17 @@ class Model {
           })));
         }
       }
+
+      // // Set uninvoked relationships to null
+      // const allRelationMethods = this.getRelationMethods();
+      // console.log('Removing uninvoked relationships:', allRelationMethods);
+      // for (const instance of instances) {
+      //   for (const method of allRelationMethods) {
+      //     if (!this.clauses.withRelations.includes(method)) {
+      //       delete instance[method];
+      //     }
+      //   }
+      // }
       // Reset the clauses for the next query
       this.cleanObject(this);
       return instances;
@@ -444,8 +476,7 @@ class Model {
         } // No else needed as we copy as-is only if there's a cast rule
       }
     }
-    // @ts-expect-error
-    delete object.clauses;
+
     return object;
   }
   // Relationship methods
@@ -514,3 +545,4 @@ Model.casts = {};
 Model.withTimestamps = true;
 Model.createdAtColumn = 'createdAt';
 Model.updatedAtColumn = 'updatedAt';
+Model.loadedRelationships = [];

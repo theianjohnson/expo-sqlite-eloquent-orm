@@ -1,27 +1,9 @@
 import * as SQLite from 'expo-sqlite';
-type Casts = Record<string, 'number' | 'boolean' | 'string' | 'json'>;
-interface Clauses {
-    select: string;
-    joins: Array<{
-        type: 'INNER' | 'LEFT' | 'RIGHT';
-        table: string;
-        firstKey: string;
-        secondKey: string;
-    }>;
-    where: Array<{
-        column: string;
-        operator: string;
-        value?: any;
-    }>;
-    orderBy: {
-        column: string;
-        direction: string;
-    } | null;
-    limit: number | null;
-    withRelations: string[];
-}
+type Casts = {
+    [key: string]: 'number' | 'boolean' | 'string' | 'json';
+};
 type ModelAttributes = Record<string, any>;
-interface SQLResult {
+type SQLResult = {
     insertId?: number;
     rowsAffected: number;
     rows: {
@@ -29,7 +11,7 @@ interface SQLResult {
         length: number;
         item: (index: number) => ModelAttributes;
     };
-}
+};
 export declare class Model {
     static db: SQLite.SQLiteDatabase;
     static tableName: string;
@@ -37,9 +19,11 @@ export declare class Model {
     static withTimestamps: boolean;
     static createdAtColumn: string;
     static updatedAtColumn: string;
-    clauses: Clauses;
+    static loadedRelationships: string[];
+    private __private;
     [key: string]: any;
     constructor(attributes?: ModelAttributes);
+    getRelationMethods(): string[];
     static table<T extends Model>(this: new () => T, name: string): T;
     static select<T extends Model>(this: new () => T, fields?: string | string[]): T;
     static join<T extends Model>(this: new () => T, type: 'INNER' | 'LEFT' | 'RIGHT', table: string, firstKey: string, secondKey: string): T;
@@ -76,9 +60,9 @@ export declare class Model {
     cleanObject<T extends Model>(object: T): T;
     hasOne<T extends Model>(relatedModel: T, foreignKey?: string, localKey?: string): Promise<Model | null>;
     hasMany<T extends Model>(relatedModel: T, foreignKey?: string, localKey?: string): Promise<Model[]>;
-    belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey?: string): Promise<Model | null>;
+    belongsTo<T extends Model>(relatedModel: T, foreignKey?: string, otherKey?: string): Promise<Model | null>;
     belongsToMany<T extends Model>(this: T, relatedModel: typeof Model, joinTableName?: string, // This can be optional if the default naming convention is to be used
     foreignKey?: string, // This can be optional and inferred from the table names
-    otherKey?: string): Promise<Model[]>;
+    otherKey?: string): Promise<Model[] | null>;
 }
 export {};

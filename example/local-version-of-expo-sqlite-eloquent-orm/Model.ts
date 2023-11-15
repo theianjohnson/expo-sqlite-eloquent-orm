@@ -1,8 +1,8 @@
 import * as SQLite from 'expo-sqlite'
 
-type Casts = Record<string, 'number' | 'boolean' | 'string' | 'json'>
+type Casts = {[key: string]: 'number' | 'boolean' | 'string' | 'json'}
 
-interface Clauses {
+type Clauses = {
   select: string
   joins: Array<{
     type: 'INNER' | 'LEFT' | 'RIGHT',
@@ -18,7 +18,7 @@ interface Clauses {
 
 type ModelAttributes = Record<string, any>
 
-interface SQLResult {
+type SQLResult = {
   insertId?: number
   rowsAffected: number
   rows: {
@@ -39,179 +39,210 @@ export class Model {
   static createdAtColumn: string = 'createdAt';
   static updatedAtColumn: string = 'updatedAt';
 
-  clauses: Clauses;
+  static loadedRelationships: string[] = [];
+
+  private __private: {
+    clauses: Clauses;
+  };
 
   [key: string]: any;
 
   constructor (attributes: ModelAttributes = {}) {
     Object.assign(this, attributes)
-    this.clauses = {
-      select: '*',
-      joins: [],
-      where: [],
-      orderBy: null,
-      limit: null,
-      withRelations: []
+    this.__private = {
+      clauses: {
+        select: '*',
+        joins: [],
+        where: [],
+        orderBy: null,
+        limit: null,
+        withRelations: []
+      }
+    }
+
+    return new Proxy<Model>(this, {
+      get: (target: Model, prop: string | symbol, receiver: any) => {
+        // console.log('Proxy get()', prop, target.__private.clauses?.withRelations);
+        if (typeof prop === 'string') {
+          if (
+            typeof target[prop as keyof Model] === 'function' &&
+            !['table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) &&
+            !target.__private.clauses?.withRelations.includes(prop)
+          ) {
+            const relationMethods = target.getRelationMethods();
+            if (relationMethods.includes(prop)) {
+              console.log('No PROP FOR YOU', prop);
+              return undefined;
+            }
+          }
+        }
+        return Reflect.get(target, prop, receiver);
+      }
+    });
+  }
+
+  getRelationMethods(): string[] {
+    const proto = Object.getPrototypeOf(this);
+    return Object.getOwnPropertyNames(proto).filter(prop => prop !== 'constructor' && typeof this[prop] === 'function');
+  }
+
+  // Static methods that proxy to instance methods  
+  static table<T extends Model>(this: new () => T, name: string): T {
+    return new this().table(name)
+  }
+
+  static select<T extends Model>(this: new () => T, fields: string | string[] = '*'): T {
+    return new this().select(fields)
+  }
+
+  static join<T extends Model>(this: new () => T, type: 'INNER' | 'LEFT' | 'RIGHT', table: string, firstKey: string, secondKey: string): T {
+    return new this().join(type, table, firstKey, secondKey);
+  }
+
+  static where<T extends Model>(this: new () => T, column: string, operatorOrValue: any, value?: any): T {
+    return new this().where(column, operatorOrValue, value)
+  }
+
+  static orderBy<T extends Model>(this: new () => T, column: string, direction: 'ASC' | 'DESC' = 'ASC'): T {
+    return new this().orderBy(column, direction)
+  }
+
+  static limit<T extends Model>(this: new () => T, number: number): T {
+    return new this().limit(number)
+  }
+
+  static with<T extends Model>(this: new () => T, relation: string): T {
+    const instance = new this().with(relation)
+    return instance
+  }
+
+  static async find(id: number | string): Promise<Model | null> {
+    return await new this().find(id)
+  }
+
+  static async insert(data: Record<string, any>): Promise<SQLResult> {
+    return await new this().insert(data);
+  }
+
+  async insert(data: Record<string, any>): Promise<SQLResult> {
+
+    const constructor = this.constructor as typeof Model;
+
+    if (!this.tableName) {
+      this.tableName = constructor.tableName;
+    }
+
+    const now = new Date().toISOString();
+    const fields = Object.keys(data);
+
+    // Cast attributes for storage
+    const valuesForStorage = fields.map(field => {
+      return constructor.prepareAttributeForStorage(field, data[field]);
+    });
+
+    // Add timestamps if applicable
+    if (constructor.withTimestamps) {
+      if (!data[constructor.createdAtColumn]) {
+        fields.push(constructor.createdAtColumn);
+        valuesForStorage.push(now);
+      }
+      if (!data[constructor.updatedAtColumn]) {
+        fields.push(constructor.updatedAtColumn);
+        valuesForStorage.push(now);
+      }
+    }
+
+    const placeholders = fields.map(() => '?').join(', ');
+
+    const sql = `INSERT INTO ${this.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+    return await constructor.executeSql(sql, valuesForStorage);
+  }
+
+  // Static seed method
+  static async seed(data: Array<Record<string, any>>): Promise<void> {
+    console.log('static seed()');
+    // Forwarding to the instance method
+    await new this().seed(data);
+  }
+
+  async seed(data: Array<Record<string, any>>) {
+    console.log('seed()');
+    // if (!this.tableName) {
+    //   throw new Error("Table name is not set for seeding.");
+    // }
+    
+    // Check if the table already has data
+    const existingData = await this.first();
+    if (!existingData) {
+      for (const item of data) {
+        await this.insert(item); // Use constructor to get the correct static context
+      }
     }
   }
 
-    // Static methods that proxy to instance methods  
-    static table<T extends Model>(this: new () => T, name: string): T {
-      return new this().table(name)
-    }
+  static async executeSql (sql: string, params: any[] = []): Promise<SQLResult> {
+    console.log('executeSql()', sql, params);
 
-    static select<T extends Model>(this: new () => T, fields: string | string[] = '*'): T {
-      return new this().select(fields)
-    }
-
-    static join<T extends Model>(this: new () => T, type: 'INNER' | 'LEFT' | 'RIGHT', table: string, firstKey: string, secondKey: string): T {
-      return new this().join(type, table, firstKey, secondKey);
-    }
-  
-    static where<T extends Model>(this: new () => T, column: string, operatorOrValue: any, value?: any): T {
-      return new this().where(column, operatorOrValue, value)
-    }
-  
-    static orderBy<T extends Model>(this: new () => T, column: string, direction: 'ASC' | 'DESC' = 'ASC'): T {
-      return new this().orderBy(column, direction)
-    }
-  
-    static limit<T extends Model>(this: new () => T, number: number): T {
-      return new this().limit(number)
-    }
-  
-    static with<T extends Model>(this: new () => T, relation: string): T {
-      const instance = new this().with(relation)
-      return instance
-    }
-
-    static async find(id: number | string): Promise<Model | null> {
-      return await new this().find(id)
-    }
-
-    static async insert(data: Record<string, any>): Promise<SQLResult> {
-      return await new this().insert(data);
-    }
-
-    async insert(data: Record<string, any>): Promise<SQLResult> {
-
-      const constructor = this.constructor as typeof Model;
-
-      if (!this.tableName) {
-        this.tableName = constructor.tableName;
-      }
-  
-      const now = new Date().toISOString();
-      const fields = Object.keys(data);
-  
-      // Cast attributes for storage
-      const valuesForStorage = fields.map(field => {
-        return constructor.prepareAttributeForStorage(field, data[field]);
-      });
-  
-      // Add timestamps if applicable
-      if (constructor.withTimestamps) {
-        if (!data[constructor.createdAtColumn]) {
-          fields.push(constructor.createdAtColumn);
-          valuesForStorage.push(now);
-        }
-        if (!data[constructor.updatedAtColumn]) {
-          fields.push(constructor.updatedAtColumn);
-          valuesForStorage.push(now);
-        }
-      }
-
-      const placeholders = fields.map(() => '?').join(', ');
-  
-      const sql = `INSERT INTO ${this.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
-      return await constructor.executeSql(sql, valuesForStorage);
-    }
-
-    // Static seed method
-    static async seed(data: Array<Record<string, any>>): Promise<void> {
-      console.log('static seed()');
-      // Forwarding to the instance method
-      await new this().seed(data);
-    }
-  
-    async seed(data: Array<Record<string, any>>) {
-      console.log('seed()');
-      // if (!this.tableName) {
-      //   throw new Error("Table name is not set for seeding.");
-      // }
-      
-      // Check if the table already has data
-      const existingData = await this.first();
-      if (!existingData) {
-        for (const item of data) {
-          await this.insert(item); // Use constructor to get the correct static context
-        }
-      }
-    }
-  
-    static async executeSql (sql: string, params: any[] = []): Promise<SQLResult> {
-      console.log('executeSql()', sql, params);
-
-      return await new Promise((resolve, reject) => {
-        this.db.transaction(tx => {
-          tx.executeSql(sql, params, (_, result) => {
-            resolve(result)
-            // @ts-expect-error
-          }, (transaction, error) => {
-            reject(error)
-          })
+    return await new Promise((resolve, reject) => {
+      this.db.transaction(tx => {
+        tx.executeSql(sql, params, (_, result) => {
+          resolve(result)
+          // @ts-expect-error
+        }, (transaction, error) => {
+          reject(error)
         })
       })
-    }
-  
-    // Cast an attribute to the specified type
-    static castAttribute(key: keyof Casts, value: any): any {
-      switch (key) {
-        case 'number':
-          return Number(value);
-        case 'boolean':
-          return Boolean(value);
-        case 'string':
-          return String(value);
-        case 'json':
-          try {
-            return JSON.parse(value);
-          } catch (e) {
-            return value;
-          }
-        // Add other types as needed
-        default:
+    })
+  }
+
+  // Cast an attribute to the specified type
+  static castAttribute(key: keyof Casts, value: any): any {
+    switch (key) {
+      case 'number':
+        return Number(value);
+      case 'boolean':
+        return Boolean(value);
+      case 'string':
+        return String(value);
+      case 'json':
+        try {
+          return JSON.parse(value);
+        } catch (e) {
           return value;
-      }
+        }
+      // Add other types as needed
+      default:
+        return value;
     }
-  
-    static prepareAttributeForStorage(key: keyof Casts, value: any): any {
-      const castType = this.casts[key];
-      
-      switch (castType) {
-        case 'number':
-          // Ensure that numbers are finite before storing, otherwise store as null
-          return isFinite(value) ? Number(value) : null;
-        case 'boolean':
-          // Convert boolean to a format that SQLite understands (1 for true, 0 for false)
-          return value ? 1 : 0;
-        case 'string':
-          // Ensure that the value is a string
-          return String(value);
-        case 'json':
-          // Stringify JSON objects
-          try {
-            return JSON.stringify(value);
-          } catch (e) {
-            // In case of an error (e.g., circular reference), store a null or a placeholder string
-            // console.error('Error stringifying JSON:', e);
-            return null; // Or a placeholder string like '{}' or '[]'
-          }
-        default:
-          // For any type not explicitly handled, return the value as is
-          return value;
-      }
+  }
+
+  static prepareAttributeForStorage(key: keyof Casts, value: any): any {
+    const castType = this.casts[key];
+    
+    switch (castType) {
+      case 'number':
+        // Ensure that numbers are finite before storing, otherwise store as null
+        return isFinite(value) ? Number(value) : null;
+      case 'boolean':
+        // Convert boolean to a format that SQLite understands (1 for true, 0 for false)
+        return value ? 1 : 0;
+      case 'string':
+        // Ensure that the value is a string
+        return String(value);
+      case 'json':
+        // Stringify JSON objects
+        try {
+          return JSON.stringify(value);
+        } catch (e) {
+          // In case of an error (e.g., circular reference), store a null or a placeholder string
+          // console.error('Error stringifying JSON:', e);
+          return null; // Or a placeholder string like '{}' or '[]'
+        }
+      default:
+        // For any type not explicitly handled, return the value as is
+        return value;
     }
+  }
 
   // Instance methods for query building
   table(name: string): this {
@@ -220,36 +251,36 @@ export class Model {
   }
 
   select(fields: string | string[] = '*'): this {
-    this.clauses.select = Array.isArray(fields) ? fields.join(', ') : fields
+    this.__private.clauses.select = Array.isArray(fields) ? fields.join(', ') : fields
     return this
   }
 
   join(type: 'INNER' | 'LEFT' | 'RIGHT', table: string, firstKey: string, secondKey: string): this {
-    this.clauses.joins.push({ type, table, firstKey, secondKey });
+    this.__private.clauses.joins.push({ type, table, firstKey, secondKey });
     return this;
   }
 
   where (column: string, operatorOrValue: any, value?: any): this {
     if (value === undefined) {
-      this.clauses.where.push({ column, operator: '=', value: operatorOrValue })
+      this.__private.clauses.where.push({ column, operator: '=', value: operatorOrValue })
     } else {
-      this.clauses.where.push({ column, operator: operatorOrValue, value })
+      this.__private.clauses.where.push({ column, operator: operatorOrValue, value })
     }
     return this
   }
 
   orderBy (column: string, direction: 'ASC' | 'DESC' = 'ASC'): this {
-    this.clauses.orderBy = { column, direction }
+    this.__private.clauses.orderBy = { column, direction }
     return this
   }
 
   limit (number: number): this {
-    this.clauses.limit = number
+    this.__private.clauses.limit = number
     return this
   }
 
   with (relation: string): this {
-    this.clauses.withRelations.push(relation)
+    this.__private.clauses.withRelations.push(relation)
     return this
   }
 
@@ -313,8 +344,8 @@ export class Model {
     const params: any[] = [];
   
     // If there are WHERE clauses, use them to build the query
-    if (this.clauses?.where?.length > 0) {
-      const whereConditions = this.clauses.where.map(clause => {
+    if (this.__private.clauses?.where?.length > 0) {
+      const whereConditions = this.__private.clauses.where.map(clause => {
         params.push(clause.value);
         return `${clause.column} ${clause.operator} ?`;
       });
@@ -340,20 +371,20 @@ export class Model {
       this.tableName = constructor.tableName;
     }
 
-    let query = `SELECT ${this.clauses.select} FROM ${this.tableName}`
+    let query = `SELECT ${this.__private.clauses.select} FROM ${this.tableName}`
     const params: Array<string | number | boolean | null> = []
 
     // Add JOIN clauses if any
-    if (this.clauses.joins.length > 0) {
-      const joinClauses = this.clauses.joins.map(joinClause => {
+    if (this.__private.clauses.joins.length > 0) {
+      const joinClauses = this.__private.clauses.joins.map(joinClause => {
         return `${joinClause.type} JOIN ${joinClause.table} ON ${joinClause.firstKey} = ${joinClause.secondKey}`;
       }).join(' ');
       query += ` ${joinClauses}`;
     }
 
     // Add WHERE clauses if any
-    if (this.clauses.where.length > 0) {
-      const whereClauses = this.clauses.where.map(clause => {
+    if (this.__private.clauses.where.length > 0) {
+      const whereClauses = this.__private.clauses.where.map(clause => {
         params.push(clause.value)
         return `${clause.column} ${clause.operator} ?`
       }).join(' AND ')
@@ -361,13 +392,13 @@ export class Model {
     }
 
     // Add ORDER BY clause if set
-    if (this.clauses.orderBy) {
+    if (this.__private.clauses.orderBy) {
       query += ` ORDER BY ${this.clauses.orderBy.column} ${this.clauses.orderBy.direction}`
     }
 
     // Add LIMIT clause if set
-    if (this.clauses.limit !== null) {
-      query += ` LIMIT ${this.clauses.limit}`
+    if (this.__private.clauses.limit !== null) {
+      query += ` LIMIT ${this.__private.clauses.limit}`
     }
 
     return { query, params };
@@ -394,14 +425,18 @@ export class Model {
     console.log(`Creating instances of ${this.constructor.name} from query result.`);
     const instances = result.rows._array.map(row => {
       const instance = new constructor(row)
+      instance.__private.clauses.withRelations = this.__private.clauses.withRelations;
       return this.cleanObject(instance)
     })
 
     // Load relationships if any are specified
-    console.log(`Loading ${this.constructor.name}.${this.clauses.withRelations}`);
-    for (const relationName of this.clauses.withRelations) {
+    console.log(`Loading ${this.constructor.name}.${this.__private.clauses.withRelations}`);
+    for (const relationName of this.__private.clauses.withRelations) {
+
+      console.log('@@@@@@@@@@@@@@@@@relationName1', relationName, this[relationName]);
       const relation = this[relationName]
       if (typeof relation === 'function') {
+        console.log('@@@@@@@@@@@@@@@@@relationName1 IS FUNCTION', relationName);
         // Load the relation data for each instance
         await Promise.all(instances.map(async (instance) => {
           try {
@@ -414,6 +449,20 @@ export class Model {
         }))
       }
     }
+
+    console.log('instance[0]', instances[0]);
+
+    // // Set uninvoked relationships to null
+    // const allRelationMethods = this.getRelationMethods();
+    // console.log('Removing uninvoked relationships:', allRelationMethods);
+    // for (const instance of instances) {
+    //   for (const method of allRelationMethods) {
+    //     if (!this.clauses.withRelations.includes(method)) {
+    //       delete instance[method];
+    //     }
+    //   }
+    // }
+
     console.log('instances', instances);
 
     // Reset the clauses for the next query
@@ -447,16 +496,14 @@ export class Model {
       }
     }
 
-    // @ts-expect-error
-    delete object.clauses
     return object
   }
 
   // Relationship methods
   async hasOne<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model | null> {
     if (!foreignKey) {
-      console.log('hasOne auto foreignKey', `${relatedModel.name.toLowerCase()}Id`);
-      foreignKey = `${relatedModel.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
+      console.log('hasOne auto foreignKey', `${this.constructor.name.toLowerCase()}Id`);
+      foreignKey = `${this.constructor.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
     }
     return await relatedModel.where(foreignKey, '=', this[localKey]).first();
   }
@@ -469,7 +516,7 @@ export class Model {
     return await relatedModel.where(foreignKey, '=', this[localKey]).get();
   }
 
-  async belongsTo<T extends Model>(relatedModel: T, foreignKey: string, otherKey: string = 'id'): Promise<Model | null> {
+  async belongsTo<T extends Model>(relatedModel: T, foreignKey?: string, otherKey: string = 'id'): Promise<Model | null> {
     if (!foreignKey) {
       console.log('belongsTo foreignKey', `${relatedModel.name.toLowerCase()}Id`);
       foreignKey = `${relatedModel.name.toLowerCase()}Id`;
@@ -483,7 +530,7 @@ export class Model {
     joinTableName?: string, // This can be optional if the default naming convention is to be used
     foreignKey?: string,   // This can be optional and inferred from the table names
     otherKey?: string      // This can be optional and inferred from the table names
-  ): Promise<Model[]> {
+  ): Promise<Model[] | null> {
 
     console.log('belongsToMany()', relatedModel, joinTableName, foreignKey, otherKey);
 
