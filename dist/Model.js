@@ -78,9 +78,10 @@ class Model {
     };
     return new Proxy(this, {
       get: (target, prop, receiver) => {
-        var _a, _b;
+        var _a;
+        // console.log('Proxy get()', prop, target.__private.clauses?.withRelations);
         if (typeof prop === 'string') {
-          if (typeof target[prop] === 'function' && !['table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) && !((_b = target.__private.clauses) === null || _b === void 0 ? void 0 : _b.withRelations.includes(prop))) {
+          if (typeof target[prop] === 'function' && !['table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) && !((_a = target.__private.clauses) === null || _a === void 0 ? void 0 : _a.withRelations.includes(prop))) {
             const relationMethods = target.getRelationMethods();
             if (relationMethods.includes(prop)) {
               return undefined;
