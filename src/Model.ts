@@ -133,7 +133,7 @@ export class Model {
     }
 
     const now = new Date().toISOString();
-    const fields = Object.keys(data);
+    const fields = Object.keys(data).filter(key => key !== '__private')
 
     // Cast attributes for storage
     const valuesForStorage = fields.map(field => {
@@ -292,7 +292,7 @@ export class Model {
   async save(): Promise<SQLResult> {
     const constructor = this.constructor as typeof Model;
     const now = new Date().toISOString()
-    const fields = Object.keys(this).filter(key => key !== 'id')
+    const fields = Object.keys(this).filter(key => key !== 'id' && key !== '__private')
     let sql
 
     // Cast attributes for storage
@@ -432,11 +432,8 @@ export class Model {
     // Load relationships if any are specified
     console.log(`Loading ${this.constructor.name}.${this.__private.clauses.withRelations}`);
     for (const relationName of this.__private.clauses.withRelations) {
-
-      console.log('@@@@@@@@@@@@@@@@@relationName1', relationName, this[relationName]);
       const relation = this[relationName]
       if (typeof relation === 'function') {
-        console.log('@@@@@@@@@@@@@@@@@relationName1 IS FUNCTION', relationName);
         // Load the relation data for each instance
         await Promise.all(instances.map(async (instance) => {
           try {
@@ -449,21 +446,6 @@ export class Model {
         }))
       }
     }
-
-    console.log('instance[0]', instances[0]);
-
-    // // Set uninvoked relationships to null
-    // const allRelationMethods = this.getRelationMethods();
-    // console.log('Removing uninvoked relationships:', allRelationMethods);
-    // for (const instance of instances) {
-    //   for (const method of allRelationMethods) {
-    //     if (!this.clauses.withRelations.includes(method)) {
-    //       delete instance[method];
-    //     }
-    //   }
-    // }
-
-    console.log('instances', instances);
 
     // Reset the clauses for the next query
     this.cleanObject(this)

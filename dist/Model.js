@@ -136,7 +136,7 @@ class Model {
         this.tableName = constructor.tableName;
       }
       const now = new Date().toISOString();
-      const fields = Object.keys(data);
+      const fields = Object.keys(data).filter(key => key !== '__private');
       // Cast attributes for storage
       const valuesForStorage = fields.map(field => {
         return constructor.prepareAttributeForStorage(field, data[field]);
@@ -299,7 +299,7 @@ class Model {
     return __awaiter(this, void 0, void 0, function* () {
       const constructor = this.constructor;
       const now = new Date().toISOString();
-      const fields = Object.keys(this).filter(key => key !== 'id');
+      const fields = Object.keys(this).filter(key => key !== 'id' && key !== '__private');
       let sql;
       // Cast attributes for storage
       const values = fields.map(field => {
@@ -436,17 +436,6 @@ class Model {
           })));
         }
       }
-
-      // // Set uninvoked relationships to null
-      // const allRelationMethods = this.getRelationMethods();
-      // console.log('Removing uninvoked relationships:', allRelationMethods);
-      // for (const instance of instances) {
-      //   for (const method of allRelationMethods) {
-      //     if (!this.clauses.withRelations.includes(method)) {
-      //       delete instance[method];
-      //     }
-      //   }
-      // }
       // Reset the clauses for the next query
       this.cleanObject(this);
       return instances;
