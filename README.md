@@ -264,11 +264,10 @@ const postUser = await post.user;
 ````
 
 ## To Do
-[] Add tests for save() and insert() for returning the model (not just the insertId) and making sure the on insert the ID is correctly set
+[] Fix manyToMany relationship returning join table columns
 [] Make tableName able to be inferred from model name
 [] Many to many attach/detach methods
 [] Update .with() to accept an array of relationships
-[] Refactor save() to use insert()
 [] Add .create() that returns the created model (https://laravel.com/docs/10.x/eloquent#inserts)
 [] whereRaw
 [] Bulk eager loading, currently eager loading is n+1

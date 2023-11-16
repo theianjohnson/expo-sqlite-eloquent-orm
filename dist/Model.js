@@ -121,6 +121,9 @@ class Model {
   }
   static find(id) {
     return __awaiter(this, void 0, void 0, function* () {
+      if (!id) {
+        throw new Error('No ID provided');
+      }
       return yield new this().find(id);
     });
   }
@@ -136,7 +139,7 @@ class Model {
         this.tableName = constructor.tableName;
       }
       const now = new Date().toISOString();
-      const fields = Object.keys(data).filter(key => key !== '__private');
+      const fields = Object.keys(data).filter(key => !this.__private.clauses.withRelations.includes(key) && !['__private', 'casts', 'tableName', 'withTimestamps', 'createdAtColumn', 'updatedAtColumn'].includes(key));
       // Cast attributes for storage
       const valuesForStorage = fields.map(field => {
         return constructor.prepareAttributeForStorage(field, data[field]);
@@ -187,7 +190,7 @@ class Model {
             resolve(result);
             // @ts-expect-error
           }, (transaction, error) => {
-            reject(error);
+            reject(`${error.toString()}. SQL: ${sql}. Params: ${params}`);
           });
         });
       });
@@ -291,22 +294,25 @@ class Model {
   }
   find(id) {
     return __awaiter(this, void 0, void 0, function* () {
+      if (!id) {
+        throw new Error('No ID provided');
+      }
       return yield this.where('id', '=', id).first();
     });
   }
   // Instance methods
   save() {
     return __awaiter(this, void 0, void 0, function* () {
-      const constructor = this.constructor;
-      const now = new Date().toISOString();
-      const fields = Object.keys(this).filter(key => key !== 'id' && key !== '__private');
-      let sql;
-      // Cast attributes for storage
-      const values = fields.map(field => {
-        // Prepare the value for storage based on its cast type
-        return constructor.prepareAttributeForStorage(field, this[field]);
-      });
       if (this.id) {
+        const constructor = this.constructor;
+        const now = new Date().toISOString();
+        const fields = Object.keys(this).filter(key => !this.__private.clauses.withRelations.includes(key) && !['__private', 'casts', 'tableName', 'withTimestamps', 'createdAtColumn', 'updatedAtColumn'].includes(key) && key !== 'id' && key !== '__private');
+        let sql;
+        // Cast attributes for storage
+        const values = fields.map(field => {
+          // Prepare the value for storage based on its cast type
+          return constructor.prepareAttributeForStorage(field, this[field]);
+        });
         if (constructor.withTimestamps && constructor.updatedAtColumn) {
           this[constructor.updatedAtColumn] = now;
           fields.push(constructor.updatedAtColumn);
@@ -315,34 +321,26 @@ class Model {
         const setClause = fields.map(field => `${field} = ?`).join(', ');
         sql = `UPDATE ${constructor.tableName} SET ${setClause} WHERE id = ?`;
         values.push(this.id);
+        yield constructor.executeSql(sql, values);
+        return this;
       } else {
         // Insert
-        if (constructor.withTimestamps) {
-          if (constructor.createdAtColumn) {
-            this[constructor.createdAtColumn] = now;
-            fields.push(constructor.createdAtColumn);
-            values.push(now);
-          }
-          if (constructor.updatedAtColumn) {
-            this[constructor.updatedAtColumn] = now;
-            fields.push(constructor.updatedAtColumn);
-            values.push(now);
-          }
+        const result = yield this.insert(this);
+        if (result.insertId) {
+          this.id = result.insertId;
+          return yield this.find(result.insertId);
         }
-        const placeholders = fields.map(() => '?').join(', ');
-        sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`;
+        return null;
       }
-      const result = yield constructor.executeSql(sql, values);
-      if (!this.id && result.insertId) {
-        this.id = result.insertId;
-      }
-      return result;
     });
   }
   delete() {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
       const constructor = this.constructor;
+      if (!this.tableName) {
+        this.tableName = constructor.tableName;
+      }
       let sql;
       const params = [];
       // If there are WHERE clauses, use them to build the query
@@ -351,10 +349,10 @@ class Model {
           params.push(clause.value);
           return `${clause.column} ${clause.operator} ?`;
         });
-        sql = `DELETE FROM ${constructor.tableName} WHERE ${whereConditions.join(' AND ')}`;
+        sql = `DELETE FROM ${this.tableName} WHERE ${whereConditions.join(' AND ')}`;
       } else if (this.id) {
         // If no WHERE clause but an id is present, delete by id
-        sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`;
+        sql = `DELETE FROM ${this.tableName} WHERE id = ?`;
         params.push(this.id);
       } else {
         // If neither WHERE clause nor id is present, throw an error
@@ -535,4 +533,3 @@ Model.casts = {};
 Model.withTimestamps = true;
 Model.createdAtColumn = 'createdAt';
 Model.updatedAtColumn = 'updatedAt';
-Model.loadedRelationships = [];

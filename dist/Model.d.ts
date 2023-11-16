@@ -19,7 +19,6 @@ export declare class Model {
     static withTimestamps: boolean;
     static createdAtColumn: string;
     static updatedAtColumn: string;
-    static loadedRelationships: string[];
     private __private;
     [key: string]: any;
     constructor(attributes?: ModelAttributes);
@@ -47,7 +46,7 @@ export declare class Model {
     limit(number: number): this;
     with(relation: string): this;
     find(id: number | string): Promise<Model | null>;
-    save(): Promise<SQLResult>;
+    save(): Promise<Model | null>;
     delete(): Promise<SQLResult>;
     getSql(): {
         query: string;
@@ -56,7 +55,7 @@ export declare class Model {
     static get(): Promise<Model[]>;
     get(): Promise<Model[]>;
     first(): Promise<Model | null>;
-    update(attributes: Partial<ModelAttributes>): Promise<SQLResult>;
+    update(attributes: Partial<ModelAttributes>): Promise<Model | null>;
     cleanObject<T extends Model>(object: T): T;
     hasOne<T extends Model>(relatedModel: T, foreignKey?: string, localKey?: string): Promise<Model | null>;
     hasMany<T extends Model>(relatedModel: T, foreignKey?: string, localKey?: string): Promise<Model[]>;

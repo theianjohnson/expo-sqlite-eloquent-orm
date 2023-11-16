@@ -190,7 +190,7 @@ export class Model {
           resolve(result)
           // @ts-expect-error
         }, (transaction, error) => {
-          reject(error)
+          reject(`${error.toString()}. SQL: ${sql}. Params: ${params}`)
         })
       })
     })
@@ -335,6 +335,10 @@ export class Model {
   async delete(): Promise<SQLResult> {
     const constructor = this.constructor as typeof Model;
   
+    if (!this.tableName) {
+      this.tableName = constructor.tableName;
+    }
+
     let sql;
     const params: any[] = [];
   
@@ -344,10 +348,10 @@ export class Model {
         params.push(clause.value);
         return `${clause.column} ${clause.operator} ?`;
       });
-      sql = `DELETE FROM ${constructor.tableName} WHERE ${whereConditions.join(' AND ')}`;
+      sql = `DELETE FROM ${this.tableName} WHERE ${whereConditions.join(' AND ')}`;
     } else if (this.id) {
       // If no WHERE clause but an id is present, delete by id
-      sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`;
+      sql = `DELETE FROM ${this.tableName} WHERE id = ?`;
       params.push(this.id);
     } else {
       // If neither WHERE clause nor id is present, throw an error
