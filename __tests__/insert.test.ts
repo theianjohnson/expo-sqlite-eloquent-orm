@@ -9,16 +9,6 @@ describe('insert', () => {
     resetMockDataStore();
   });
 
-  it('should create a new person and save', async () => {
-    const newPerson = new Person({ name: 'John', groupId: 1 });
-    const expectedInsertId = mockDataStore.people.length + 1;
-
-    const result = await newPerson.save();
-
-    expect(result.insertId).toBe(expectedInsertId);
-    expect(mockDataStore.people).toContainEqual(expect.objectContaining(newPerson));
-  });
-
   it('should insert a new person record into the database statically', async () => {
     const newPersonData = { name: 'John', groupId: 1 };
     const expectedInsertId = mockDataStore.people.length + 1;

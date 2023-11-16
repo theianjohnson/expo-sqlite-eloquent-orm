@@ -39,8 +39,6 @@ export class Model {
   static createdAtColumn: string = 'createdAt';
   static updatedAtColumn: string = 'updatedAt';
 
-  static loadedRelationships: string[] = [];
-
   private __private: {
     clauses: Clauses;
   };
@@ -117,6 +115,9 @@ export class Model {
   }
 
   static async find(id: number | string): Promise<Model | null> {
+    if(!id) {
+      throw new Error('No ID provided');
+    }
     return await new this().find(id)
   }
 
@@ -133,7 +134,7 @@ export class Model {
     }
 
     const now = new Date().toISOString();
-    const fields = Object.keys(data).filter(key => key !== '__private')
+    const fields = Object.keys(data).filter(key => !this.__private.clauses.withRelations.includes(key) && !['__private', 'casts', 'tableName', 'withTimestamps', 'createdAtColumn', 'updatedAtColumn'].includes(key))
 
     // Cast attributes for storage
     const valuesForStorage = fields.map(field => {
@@ -285,24 +286,27 @@ export class Model {
   }
 
   async find(id: number | string): Promise<Model | null> {
+    if(!id) {
+      throw new Error('No ID provided');
+    }
     return await this.where('id', '=', id).first();
   }
 
   // Instance methods
-  async save(): Promise<SQLResult> {
-    const constructor = this.constructor as typeof Model;
-    const now = new Date().toISOString()
-    const fields = Object.keys(this).filter(key => key !== 'id' && key !== '__private')
-    let sql
-
-    // Cast attributes for storage
-    const values = fields.map(field => {
-      // Prepare the value for storage based on its cast type
-      return constructor.prepareAttributeForStorage(field as keyof Casts, this[field]);
-    });
-
-
+  async save(): Promise<Model | null> {
     if (this.id) {
+      const constructor = this.constructor as typeof Model;
+
+      const now = new Date().toISOString()
+      const fields = Object.keys(this).filter(key => !this.__private.clauses.withRelations.includes(key) && !['__private', 'casts', 'tableName', 'withTimestamps', 'createdAtColumn', 'updatedAtColumn'].includes(key) && key !== 'id' && key !== '__private')      
+      let sql
+  
+      // Cast attributes for storage
+      const values = fields.map(field => {
+        // Prepare the value for storage based on its cast type
+        return constructor.prepareAttributeForStorage(field as keyof Casts, this[field]);
+      });
+
       if (constructor.withTimestamps && constructor.updatedAtColumn) {
         this[constructor.updatedAtColumn] = now;
         fields.push(constructor.updatedAtColumn);
@@ -312,29 +316,20 @@ export class Model {
       const setClause = fields.map(field => `${field} = ?`).join(', ')
       sql = `UPDATE ${constructor.tableName} SET ${setClause} WHERE id = ?`
       values.push(this.id)
+
+      await constructor.executeSql(sql, values)
+      return this;
     } else {
       // Insert
-      if (constructor.withTimestamps) {
-        if (constructor.createdAtColumn) {
-          this[constructor.createdAtColumn] = now;
-          fields.push(constructor.createdAtColumn);
-          values.push(now);
-        }
-        if (constructor.updatedAtColumn) {
-          this[constructor.updatedAtColumn] = now;
-          fields.push(constructor.updatedAtColumn);
-          values.push(now);
-        }
+      const result = await this.insert(this)
+      
+      if(result.insertId) {
+        this.id = result.insertId;
+        return await this.find(result.insertId);
       }
 
-      const placeholders = fields.map(() => '?').join(', ')
-      sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`
+      return null;
     }
-    const result = await constructor.executeSql(sql, values)
-    if (!this.id && result.insertId) {
-      this.id = result.insertId
-    }
-    return result
   }
 
   async delete(): Promise<SQLResult> {
@@ -460,7 +455,7 @@ export class Model {
     return results[0] || null
   }
 
-  async update (attributes: Partial<ModelAttributes>): Promise<SQLResult> {
+  async update (attributes: Partial<ModelAttributes>): Promise<Model | null> {
     Object.assign(this, attributes)
     return await this.save()
   }
