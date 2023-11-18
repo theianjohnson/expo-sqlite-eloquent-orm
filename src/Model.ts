@@ -481,7 +481,7 @@ export class Model {
   }
 
   // Relationship methods
-  async hasOne<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model | null> {
+  async hasOne<T extends Model>(relatedModel: typeof Model, foreignKey?: string, localKey: string = 'id'): Promise<Model | null> {
     if (!foreignKey) {
       console.log('hasOne auto foreignKey', `${this.constructor.name.toLowerCase()}Id`);
       foreignKey = `${this.constructor.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
@@ -489,7 +489,7 @@ export class Model {
     return await relatedModel.where(foreignKey, '=', this[localKey]).first();
   }
 
-  async hasMany<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model[]> {
+  async hasMany<T extends Model>(relatedModel: typeof Model, foreignKey?: string, localKey: string = 'id'): Promise<Model[]> {
     if (!foreignKey) {
       console.log('hasMany auto foreignKey', `${this.constructor.name.toLowerCase()}Id`);
       foreignKey = `${this.constructor.name.toLowerCase()}Id`;
@@ -497,7 +497,7 @@ export class Model {
     return await relatedModel.where(foreignKey, '=', this[localKey]).get();
   }
 
-  async belongsTo<T extends Model>(relatedModel: T, foreignKey?: string, otherKey: string = 'id'): Promise<Model | null> {
+  async belongsTo<T extends Model>(relatedModel: typeof Model, foreignKey?: string, otherKey: string = 'id'): Promise<Model | null> {
     if (!foreignKey) {
       console.log('belongsTo foreignKey', `${relatedModel.name.toLowerCase()}Id`);
       foreignKey = `${relatedModel.name.toLowerCase()}Id`;

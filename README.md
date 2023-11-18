@@ -265,6 +265,7 @@ const postUser = await post.user;
 
 ## To Do
 [] Fix manyToMany relationship returning join table columns
+[] Fix Typescript errors when defining models, ie "Class static side 'typeof Person' incorrectly extends base class static side 'typeof Model'."
 [] Make tableName able to be inferred from model name
 [] Many to many attach/detach methods
 [] Update .with() to accept an array of relationships
