@@ -318,8 +318,9 @@ class Model {
           fields.push(constructor.updatedAtColumn);
           values.push(now);
         }
+        const tableName = constructor.tableName || `${constructor.name.toLowerCase()}s`;
         const setClause = fields.map(field => `${field} = ?`).join(', ');
-        sql = `UPDATE ${constructor.tableName} SET ${setClause} WHERE id = ?`;
+        sql = `UPDATE ${tableName} SET ${setClause} WHERE id = ?`;
         values.push(this.id);
         yield constructor.executeSql(sql, values);
         return this;
