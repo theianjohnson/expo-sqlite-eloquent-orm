@@ -136,7 +136,7 @@ class Model {
     return __awaiter(this, void 0, void 0, function* () {
       const constructor = this.constructor;
       if (!this.tableName) {
-        this.tableName = constructor.tableName;
+        this.tableName = constructor.tableName || `${constructor.name.toLowerCase()}s`;
       }
       const now = new Date().toISOString();
       const fields = Object.keys(data).filter(key => !this.__private.clauses.withRelations.includes(key) && !['__private', 'casts', 'tableName', 'withTimestamps', 'createdAtColumn', 'updatedAtColumn'].includes(key));

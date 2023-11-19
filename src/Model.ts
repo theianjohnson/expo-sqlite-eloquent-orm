@@ -130,7 +130,7 @@ export class Model {
     const constructor = this.constructor as typeof Model;
 
     if (!this.tableName) {
-      this.tableName = constructor.tableName;
+      this.tableName = constructor.tableName || `${constructor.name.toLowerCase()}s`;
     }
 
     const now = new Date().toISOString();
