@@ -39,8 +39,6 @@ export class Model {
   static createdAtColumn: string = 'createdAt';
   static updatedAtColumn: string = 'updatedAt';
 
-  static loadedRelationships: string[] = [];
-
   private __private: {
     clauses: Clauses;
   };
@@ -117,6 +115,9 @@ export class Model {
   }
 
   static async find(id: number | string): Promise<Model | null> {
+    if(!id) {
+      throw new Error('No ID provided');
+    }
     return await new this().find(id)
   }
 
@@ -133,7 +134,7 @@ export class Model {
     }
 
     const now = new Date().toISOString();
-    const fields = Object.keys(data);
+    const fields = Object.keys(data).filter(key => !this.__private.clauses.withRelations.includes(key) && !['__private', 'casts', 'tableName', 'withTimestamps', 'createdAtColumn', 'updatedAtColumn'].includes(key))
 
     // Cast attributes for storage
     const valuesForStorage = fields.map(field => {
@@ -189,7 +190,7 @@ export class Model {
           resolve(result)
           // @ts-expect-error
         }, (transaction, error) => {
-          reject(error)
+          reject(`${error.toString()}. SQL: ${sql}. Params: ${params}`)
         })
       })
     })
@@ -285,24 +286,27 @@ export class Model {
   }
 
   async find(id: number | string): Promise<Model | null> {
+    if(!id) {
+      throw new Error('No ID provided');
+    }
     return await this.where('id', '=', id).first();
   }
 
   // Instance methods
-  async save(): Promise<SQLResult> {
-    const constructor = this.constructor as typeof Model;
-    const now = new Date().toISOString()
-    const fields = Object.keys(this).filter(key => key !== 'id')
-    let sql
-
-    // Cast attributes for storage
-    const values = fields.map(field => {
-      // Prepare the value for storage based on its cast type
-      return constructor.prepareAttributeForStorage(field as keyof Casts, this[field]);
-    });
-
-
+  async save(): Promise<Model | null> {
     if (this.id) {
+      const constructor = this.constructor as typeof Model;
+
+      const now = new Date().toISOString()
+      const fields = Object.keys(this).filter(key => !this.__private.clauses.withRelations.includes(key) && !['__private', 'casts', 'tableName', 'withTimestamps', 'createdAtColumn', 'updatedAtColumn'].includes(key) && key !== 'id' && key !== '__private')      
+      let sql
+  
+      // Cast attributes for storage
+      const values = fields.map(field => {
+        // Prepare the value for storage based on its cast type
+        return constructor.prepareAttributeForStorage(field as keyof Casts, this[field]);
+      });
+
       if (constructor.withTimestamps && constructor.updatedAtColumn) {
         this[constructor.updatedAtColumn] = now;
         fields.push(constructor.updatedAtColumn);
@@ -312,34 +316,29 @@ export class Model {
       const setClause = fields.map(field => `${field} = ?`).join(', ')
       sql = `UPDATE ${constructor.tableName} SET ${setClause} WHERE id = ?`
       values.push(this.id)
+
+      await constructor.executeSql(sql, values)
+      return this;
     } else {
       // Insert
-      if (constructor.withTimestamps) {
-        if (constructor.createdAtColumn) {
-          this[constructor.createdAtColumn] = now;
-          fields.push(constructor.createdAtColumn);
-          values.push(now);
-        }
-        if (constructor.updatedAtColumn) {
-          this[constructor.updatedAtColumn] = now;
-          fields.push(constructor.updatedAtColumn);
-          values.push(now);
-        }
+      const result = await this.insert(this)
+      
+      if(result.insertId) {
+        this.id = result.insertId;
+        return await this.find(result.insertId);
       }
 
-      const placeholders = fields.map(() => '?').join(', ')
-      sql = `INSERT INTO ${constructor.tableName} (${fields.join(', ')}) VALUES (${placeholders})`
+      return null;
     }
-    const result = await constructor.executeSql(sql, values)
-    if (!this.id && result.insertId) {
-      this.id = result.insertId
-    }
-    return result
   }
 
   async delete(): Promise<SQLResult> {
     const constructor = this.constructor as typeof Model;
   
+    if (!this.tableName) {
+      this.tableName = constructor.tableName || `${constructor.name.toLowerCase()}s`;
+    }
+
     let sql;
     const params: any[] = [];
   
@@ -349,10 +348,10 @@ export class Model {
         params.push(clause.value);
         return `${clause.column} ${clause.operator} ?`;
       });
-      sql = `DELETE FROM ${constructor.tableName} WHERE ${whereConditions.join(' AND ')}`;
+      sql = `DELETE FROM ${this.tableName} WHERE ${whereConditions.join(' AND ')}`;
     } else if (this.id) {
       // If no WHERE clause but an id is present, delete by id
-      sql = `DELETE FROM ${constructor.tableName} WHERE id = ?`;
+      sql = `DELETE FROM ${this.tableName} WHERE id = ?`;
       params.push(this.id);
     } else {
       // If neither WHERE clause nor id is present, throw an error
@@ -368,7 +367,7 @@ export class Model {
 
     if (!this.tableName) {
       const constructor = this.constructor as typeof Model
-      this.tableName = constructor.tableName;
+      this.tableName = constructor.tableName || `${constructor.name.toLowerCase()}s`;
     }
 
     let query = `SELECT ${this.__private.clauses.select} FROM ${this.tableName}`
@@ -432,11 +431,8 @@ export class Model {
     // Load relationships if any are specified
     console.log(`Loading ${this.constructor.name}.${this.__private.clauses.withRelations}`);
     for (const relationName of this.__private.clauses.withRelations) {
-
-      console.log('@@@@@@@@@@@@@@@@@relationName1', relationName, this[relationName]);
       const relation = this[relationName]
       if (typeof relation === 'function') {
-        console.log('@@@@@@@@@@@@@@@@@relationName1 IS FUNCTION', relationName);
         // Load the relation data for each instance
         await Promise.all(instances.map(async (instance) => {
           try {
@@ -449,21 +445,6 @@ export class Model {
         }))
       }
     }
-
-    console.log('instance[0]', instances[0]);
-
-    // // Set uninvoked relationships to null
-    // const allRelationMethods = this.getRelationMethods();
-    // console.log('Removing uninvoked relationships:', allRelationMethods);
-    // for (const instance of instances) {
-    //   for (const method of allRelationMethods) {
-    //     if (!this.clauses.withRelations.includes(method)) {
-    //       delete instance[method];
-    //     }
-    //   }
-    // }
-
-    console.log('instances', instances);
 
     // Reset the clauses for the next query
     this.cleanObject(this)
@@ -478,7 +459,7 @@ export class Model {
     return results[0] || null
   }
 
-  async update (attributes: Partial<ModelAttributes>): Promise<SQLResult> {
+  async update (attributes: Partial<ModelAttributes>): Promise<Model | null> {
     Object.assign(this, attributes)
     return await this.save()
   }
@@ -500,7 +481,7 @@ export class Model {
   }
 
   // Relationship methods
-  async hasOne<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model | null> {
+  async hasOne<T extends Model>(relatedModel: typeof Model, foreignKey?: string, localKey: string = 'id'): Promise<Model | null> {
     if (!foreignKey) {
       console.log('hasOne auto foreignKey', `${this.constructor.name.toLowerCase()}Id`);
       foreignKey = `${this.constructor.name.toLowerCase()}Id`; // Assuming the foreign key is named after the current model
@@ -508,7 +489,7 @@ export class Model {
     return await relatedModel.where(foreignKey, '=', this[localKey]).first();
   }
 
-  async hasMany<T extends Model>(relatedModel: T, foreignKey?: string, localKey: string = 'id'): Promise<Model[]> {
+  async hasMany<T extends Model>(relatedModel: typeof Model, foreignKey?: string, localKey: string = 'id'): Promise<Model[]> {
     if (!foreignKey) {
       console.log('hasMany auto foreignKey', `${this.constructor.name.toLowerCase()}Id`);
       foreignKey = `${this.constructor.name.toLowerCase()}Id`;
@@ -516,7 +497,7 @@ export class Model {
     return await relatedModel.where(foreignKey, '=', this[localKey]).get();
   }
 
-  async belongsTo<T extends Model>(relatedModel: T, foreignKey?: string, otherKey: string = 'id'): Promise<Model | null> {
+  async belongsTo<T extends Model>(relatedModel: typeof Model, foreignKey?: string, otherKey: string = 'id'): Promise<Model | null> {
     if (!foreignKey) {
       console.log('belongsTo foreignKey', `${relatedModel.name.toLowerCase()}Id`);
       foreignKey = `${relatedModel.name.toLowerCase()}Id`;
@@ -547,8 +528,8 @@ export class Model {
     console.log('relatedName', relatedName);
     console.log('currentName', currentName);
   
-    const relatedTableName = relatedConstructor.tableName;
-    const currentTableName = currentConstructor.tableName;
+    const relatedTableName = relatedConstructor.tableName || `${relatedConstructor.name.toLowerCase()}s`;
+    const currentTableName = currentConstructor.tableName || `${currentConstructor.name.toLowerCase()}s`;
 
     console.log('relatedTableName', relatedTableName);
     console.log('currentTableName', currentTableName);
@@ -570,6 +551,7 @@ export class Model {
   
     // Use the ORM's methods to construct the query
     const instances = await relatedConstructor
+      .select(`${relatedTableName}.*`)
       .join('INNER', joinTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`)
       .where(`${joinTableName}.${foreignKey}`, '=', this.id)
       .get();

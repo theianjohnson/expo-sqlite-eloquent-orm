@@ -82,11 +82,32 @@ mockExecuteSql.mockImplementation((sql, params, success, failure) => {
     const joins = parseJoinClauses(sql);
 
     if (upperSql.startsWith('SELECT')) {
+
+      // Determine which columns to select
+      const selectMatch = sql.match(/SELECT (.+?) FROM/i);
+      let selectColumns = [];
+      if (selectMatch && selectMatch[1] !== '*') {
+        selectColumns = selectMatch[1].split(',').map(column => column.trim());
+      }
+
       rows = mockDataStore[table];
 
       // Apply the JOIN logic if joins are present
       if (joins.length > 0) {
         rows = applyJoins(rows, joins);
+      }
+
+      // Filter the rows to only include the specified columns
+      if (selectColumns.length > 0) {
+        rows = rows.map(row => {
+          return selectColumns.reduce((filteredRow, column) => {
+            const [tableAlias, columnName] = column.includes('.') ? column.split('.') : [null, column];
+            if (tableAlias === null || tableAlias === table) {
+              filteredRow[columnName] = row[columnName];
+            }
+            return filteredRow;
+          }, {});
+        });
       }
 
       console.log('rows', rows);

@@ -339,7 +339,7 @@ class Model {
     return __awaiter(this, void 0, void 0, function* () {
       const constructor = this.constructor;
       if (!this.tableName) {
-        this.tableName = constructor.tableName;
+        this.tableName = constructor.tableName || `${constructor.name.toLowerCase()}s`;
       }
       let sql;
       const params = [];
@@ -365,7 +365,7 @@ class Model {
   getSql() {
     if (!this.tableName) {
       const constructor = this.constructor;
-      this.tableName = constructor.tableName;
+      this.tableName = constructor.tableName || `${constructor.name.toLowerCase()}s`;
     }
     let query = `SELECT ${this.__private.clauses.select} FROM ${this.tableName}`;
     const params = [];
@@ -505,8 +505,8 @@ class Model {
       // Determine the names
       const relatedName = relatedConstructor.name.toLowerCase();
       const currentName = currentConstructor.name.toLowerCase();
-      const relatedTableName = relatedConstructor.tableName;
-      const currentTableName = currentConstructor.tableName;
+      const relatedTableName = relatedConstructor.tableName || `${relatedConstructor.name.toLowerCase()}s`;
+      const currentTableName = currentConstructor.tableName || `${currentConstructor.name.toLowerCase()}s`;
       // If joinTableName is not provided, determine it based on the table names
       if (!joinTableName) {
         joinTableName = [relatedTableName, currentTableName].sort().join('_');
@@ -520,7 +520,7 @@ class Model {
         otherKey = `${relatedName}Id`; // Assuming the singular form of the table name plus 'Id'
       }
       // Use the ORM's methods to construct the query
-      const instances = yield relatedConstructor.join('INNER', joinTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`).where(`${joinTableName}.${foreignKey}`, '=', this.id).get();
+      const instances = yield relatedConstructor.select(`${relatedTableName}.*`).join('INNER', joinTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`).where(`${joinTableName}.${foreignKey}`, '=', this.id).get();
       // Instantiate the related models with the result
       return instances;
     });

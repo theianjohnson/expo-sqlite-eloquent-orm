@@ -336,7 +336,7 @@ export class Model {
     const constructor = this.constructor as typeof Model;
   
     if (!this.tableName) {
-      this.tableName = constructor.tableName;
+      this.tableName = constructor.tableName || `${constructor.name.toLowerCase()}s`;
     }
 
     let sql;
@@ -367,7 +367,7 @@ export class Model {
 
     if (!this.tableName) {
       const constructor = this.constructor as typeof Model
-      this.tableName = constructor.tableName;
+      this.tableName = constructor.tableName || `${constructor.name.toLowerCase()}s`;
     }
 
     let query = `SELECT ${this.__private.clauses.select} FROM ${this.tableName}`
@@ -528,8 +528,8 @@ export class Model {
     console.log('relatedName', relatedName);
     console.log('currentName', currentName);
   
-    const relatedTableName = relatedConstructor.tableName;
-    const currentTableName = currentConstructor.tableName;
+    const relatedTableName = relatedConstructor.tableName || `${relatedConstructor.name.toLowerCase()}s`;
+    const currentTableName = currentConstructor.tableName || `${currentConstructor.name.toLowerCase()}s`;
 
     console.log('relatedTableName', relatedTableName);
     console.log('currentTableName', currentTableName);
@@ -551,6 +551,7 @@ export class Model {
   
     // Use the ORM's methods to construct the query
     const instances = await relatedConstructor
+      .select(`${relatedTableName}.*`)
       .join('INNER', joinTableName, `${joinTableName}.${otherKey}`, `${relatedTableName}.id`)
       .where(`${joinTableName}.${foreignKey}`, '=', this.id)
       .get();

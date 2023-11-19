@@ -5,7 +5,6 @@ import { Model, Migration } from './local-version-of-expo-sqlite-eloquent-orm';
 
 // Define some models
 class Group extends Model {
-  static tableName = 'groups';
   static withTimestamps = false;
 
   people() {
@@ -14,7 +13,6 @@ class Group extends Model {
 }
 
 class Location extends Model {
-  static tableName = 'locations';
   static withTimestamps = false;
 
   people() {
@@ -129,7 +127,7 @@ export default function App() {
       const people = await Person.with('location').with('groups').get();
       setPeople(people);
 
-      const person = await Person.where('name', 'Nora').first();
+      const person = await Person.with('groups').where('name', 'Nora').first();
       setPerson(person);
 
       const newGroup = new Group();
@@ -167,7 +165,7 @@ export default function App() {
 
       <Text>Person:</Text>
       {!!person && (
-        <Text>{person.name}</Text>
+        <Text>{person.name} - {JSON.stringify(person.groups?.[0])}</Text>
       )}
 
       <View style={{ height: 10 }} />
