@@ -3,16 +3,20 @@ import { Model } from './Model'
 type Migrations = Record<string, string>
 
 export class Migration {
-  static async runMigrations (migrations: Migrations): Promise<void> {
+  static async runMigrations (migrations: Migrations): Promise<Record<string, string>[]> {
     await this.createMigrationsTable()
+    const migrationsRun = [];
     for (const [version, sql] of Object.entries(migrations)) {
       const migrationApplied = await this.checkMigration(version)
       if (!migrationApplied) {
         await this.applyMigration(version, sql)
+        migrationsRun.push({version, sql});
       } else {
         console.log('No migrations to apply.')
       }
     }
+
+    return migrationsRun;
   }
 
   static async createMigrationsTable (): Promise<void> {
