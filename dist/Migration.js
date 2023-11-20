@@ -36,12 +36,18 @@ class Migration {
   static runMigrations(migrations) {
     return __awaiter(this, void 0, void 0, function* () {
       yield this.createMigrationsTable();
+      const migrationsRun = [];
       for (const [version, sql] of Object.entries(migrations)) {
         const migrationApplied = yield this.checkMigration(version);
         if (!migrationApplied) {
           yield this.applyMigration(version, sql);
+          migrationsRun.push({
+            version,
+            sql
+          });
         } else {}
       }
+      return migrationsRun;
     });
   }
   static createMigrationsTable() {
