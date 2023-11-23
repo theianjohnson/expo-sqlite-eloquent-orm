@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 type Casts = {
-    [key: string]: 'number' | 'boolean' | 'string' | 'json';
+    [key: string]: 'number' | 'boolean' | 'string' | 'date' | 'json';
 };
 type ModelAttributes = Record<string, any>;
 type SQLResult = {

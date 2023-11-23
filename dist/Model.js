@@ -205,6 +205,8 @@ class Model {
         return Boolean(value);
       case 'string':
         return String(value);
+      case 'date':
+        return new Date(value);
       case 'json':
         try {
           return JSON.parse(value);
@@ -220,26 +222,20 @@ class Model {
     const castType = this.casts[key];
     switch (castType) {
       case 'number':
-        // Ensure that numbers are finite before storing, otherwise store as null
         return isFinite(value) ? Number(value) : null;
       case 'boolean':
-        // Convert boolean to a format that SQLite understands (1 for true, 0 for false)
         return value ? 1 : 0;
       case 'string':
-        // Ensure that the value is a string
         return String(value);
+      case 'date':
+        return value instanceof Date ? value.toISOString() : value;
       case 'json':
-        // Stringify JSON objects
         try {
           return JSON.stringify(value);
         } catch (e) {
-          // In case of an error (e.g., circular reference), store a null or a placeholder string
-          // console.error('Error stringifying JSON:', e);
-          return null; // Or a placeholder string like '{}' or '[]'
+          return null;
         }
-
       default:
-        // For any type not explicitly handled, return the value as is
         return value;
     }
   }
@@ -530,7 +526,10 @@ class Model {
 exports.Model = Model;
 Model.db = SQLite.openDatabase('app.db');
 Model.tableName = '';
-Model.casts = {};
+Model.casts = {
+  createdAt: 'date',
+  updatedAt: 'date'
+};
 Model.withTimestamps = true;
 Model.createdAtColumn = 'createdAt';
 Model.updatedAtColumn = 'updatedAt';

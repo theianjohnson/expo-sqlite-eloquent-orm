@@ -13,4 +13,21 @@ describe('castAttribute', () => {
   it('should handle invalid JSON when casting', () => {
     expect(Model.castAttribute('json', 'not a json string')).toEqual('not a json string');
   });
+
+  it('should cast date strings to Date objects', () => {
+    const isoDateString = '2020-01-01T00:00:00.000Z';
+    const dateObject = Model.castAttribute('date', isoDateString);
+    expect(dateObject).toBeInstanceOf(Date);
+    expect(dateObject.toISOString()).toBe(isoDateString);
+  });
+
+  it('should handle invalid date strings when casting', () => {
+    const invalidDateString = 'not a valid date';
+    const result = Model.castAttribute('date', invalidDateString);
+    // Depending on how you want to handle invalid dates, 
+    // you can expect either a null, an invalid Date object, or the original string
+    // For example, expecting an invalid Date object:
+    expect(result).toBeInstanceOf(Date);
+    expect(isNaN(result.getTime())).toBe(true); // Invalid Date object check
+  });
 });
