@@ -1,4 +1,3 @@
-import * as SQLite from 'expo-sqlite';
 type Casts = {
     [key: string]: 'number' | 'boolean' | 'string' | 'date' | 'json';
 };
@@ -13,7 +12,7 @@ type SQLResult = {
     };
 };
 export declare class Model {
-    static db: SQLite.SQLiteDatabase;
+    private static db;
     static tableName: string;
     static casts: Casts;
     static withTimestamps: boolean;
@@ -22,6 +21,7 @@ export declare class Model {
     private __private;
     [key: string]: any;
     constructor(attributes?: ModelAttributes);
+    static resetDatabase(): Promise<void>;
     getRelationMethods(): string[];
     static table<T extends Model>(this: new () => T, name: string): T;
     static select<T extends Model>(this: new () => T, fields?: string | string[]): T;

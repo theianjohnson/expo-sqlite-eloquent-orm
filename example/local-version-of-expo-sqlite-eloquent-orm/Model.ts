@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite'
 
-type Casts = {[key: string]: 'number' | 'boolean' | 'string' | 'json'}
+type Casts = {[key: string]: 'number' | 'boolean' | 'string' | 'date' | 'json'}
 
 type Clauses = {
   select: string
@@ -29,11 +29,14 @@ type SQLResult = {
 }
 
 export class Model {
-  static db = SQLite.openDatabase('app.db')
+  private static db = SQLite.openDatabase('app.db')
   
   static tableName = ''
 
-  static casts: Casts = {}
+  static casts: Casts = {
+    createdAt: 'date',
+    updatedAt: 'date',
+  }
 
   static withTimestamps: boolean = true;
   static createdAtColumn: string = 'createdAt';
@@ -64,7 +67,7 @@ export class Model {
         if (typeof prop === 'string') {
           if (
             typeof target[prop as keyof Model] === 'function' &&
-            !['table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) &&
+            !['resetDatabase', 'table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) &&
             !target.__private.clauses?.withRelations.includes(prop)
           ) {
             const relationMethods = target.getRelationMethods();
@@ -77,6 +80,12 @@ export class Model {
         return Reflect.get(target, prop, receiver);
       }
     });
+  }
+
+  static async resetDatabase() {
+    await this.db.closeAsync();
+    await this.db.deleteAsync();
+    this.db = SQLite.openDatabase('app.db');
   }
 
   getRelationMethods(): string[] {
@@ -130,7 +139,7 @@ export class Model {
     const constructor = this.constructor as typeof Model;
 
     if (!this.tableName) {
-      this.tableName = constructor.tableName;
+      this.tableName = constructor.tableName || `${constructor.name.toLowerCase()}s`;
     }
 
     const now = new Date().toISOString();
@@ -205,6 +214,8 @@ export class Model {
         return Boolean(value);
       case 'string':
         return String(value);
+      case 'date':
+        return new Date(value);
       case 'json':
         try {
           return JSON.parse(value);
@@ -222,25 +233,20 @@ export class Model {
     
     switch (castType) {
       case 'number':
-        // Ensure that numbers are finite before storing, otherwise store as null
         return isFinite(value) ? Number(value) : null;
       case 'boolean':
-        // Convert boolean to a format that SQLite understands (1 for true, 0 for false)
         return value ? 1 : 0;
       case 'string':
-        // Ensure that the value is a string
         return String(value);
+      case 'date':
+        return value instanceof Date ? value.toISOString() : value;
       case 'json':
-        // Stringify JSON objects
         try {
           return JSON.stringify(value);
         } catch (e) {
-          // In case of an error (e.g., circular reference), store a null or a placeholder string
-          // console.error('Error stringifying JSON:', e);
-          return null; // Or a placeholder string like '{}' or '[]'
+          return null;
         }
       default:
-        // For any type not explicitly handled, return the value as is
         return value;
     }
   }
@@ -313,8 +319,10 @@ export class Model {
         values.push(now);
       }
 
+      const tableName = constructor.tableName || `${constructor.name.toLowerCase()}s`;
+
       const setClause = fields.map(field => `${field} = ?`).join(', ')
-      sql = `UPDATE ${constructor.tableName} SET ${setClause} WHERE id = ?`
+      sql = `UPDATE ${tableName} SET ${setClause} WHERE id = ?`
       values.push(this.id)
 
       await constructor.executeSql(sql, values)

@@ -107,17 +107,19 @@ export default function App() {
 
   const [newGroupPeople, setNewGroupPeople] = useState(null);
 
-  // Run migrations and seed data
+  const [triggerRerender, setTriggerRerender] = useState(false);
+
+  // Run the first time
   useEffect(() => {
     (async() => {
       await Migration.runMigrations(migrations);
-      await Group.seed(seedData.groups);
-      await Location.seed(seedData.locations);
-      await Person.seed(seedData.people);
+      await seedDatabase();
+    })();
+  }, []);
 
-      // You can also use the base Model class and provide the table name manually
-      await Model.table('groups_people').seed(seedData.groups_people);
-
+  // Run whenever we trigger rerender so we can see what deleting and recreating the database does
+  useEffect(() => {
+    (async() => {
       const location = await Location.with('people').find(1);
       setLocation(location);
 
@@ -133,11 +135,23 @@ export default function App() {
       const newGroup = new Group();
       setNewGroupPeople(newGroup.people);
     })();
-  }, []);
+  }, [triggerRerender]);
 
-  const deleteDatabase = async () => {
-    await Model.db.closeAsync();
-    await Model.db.deleteAsync();
+  const resetDatabase = async () => {
+    await Model.resetDatabase();
+    await Migration.runMigrations(migrations);
+    setTriggerRerender(val => !val);
+  }
+
+  const seedDatabase = async () => {
+    await Group.seed(seedData.groups);
+    await Location.seed(seedData.locations);
+    await Person.seed(seedData.people);
+
+    // You can also use the base Model class and provide the table name manually
+    await Model.table('groups_people').seed(seedData.groups_people);
+
+    setTriggerRerender(val => !val);
   }
 
   return (
@@ -170,7 +184,8 @@ export default function App() {
 
       <View style={{ height: 10 }} />
 
-      <Button onPress={deleteDatabase} title="Delete Database" />
+      <Button onPress={resetDatabase} title="Reset Database" />
+      <Button onPress={seedDatabase} title="Re-seed Database" />
 
       <StatusBar style="auto" />
     </View>

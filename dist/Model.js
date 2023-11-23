@@ -81,7 +81,7 @@ class Model {
         var _a;
         // console.log('Proxy get()', prop, target.__private.clauses?.withRelations);
         if (typeof prop === 'string') {
-          if (typeof target[prop] === 'function' && !['table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) && !((_a = target.__private.clauses) === null || _a === void 0 ? void 0 : _a.withRelations.includes(prop))) {
+          if (typeof target[prop] === 'function' && !['resetDatabase', 'table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) && !((_a = target.__private.clauses) === null || _a === void 0 ? void 0 : _a.withRelations.includes(prop))) {
             const relationMethods = target.getRelationMethods();
             if (relationMethods.includes(prop)) {
               return undefined;
@@ -90,6 +90,13 @@ class Model {
         }
         return Reflect.get(target, prop, receiver);
       }
+    });
+  }
+  static resetDatabase() {
+    return __awaiter(this, void 0, void 0, function* () {
+      yield this.db.closeAsync();
+      yield this.db.deleteAsync();
+      this.db = SQLite.openDatabase('app.db');
     });
   }
   getRelationMethods() {
