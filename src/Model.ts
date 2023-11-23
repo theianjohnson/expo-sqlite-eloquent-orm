@@ -215,7 +215,7 @@ export class Model {
       case 'string':
         return String(value);
       case 'date':
-        return new Date(value);
+        return !!value ? new Date(value) : null;
       case 'json':
         try {
           return JSON.parse(value);

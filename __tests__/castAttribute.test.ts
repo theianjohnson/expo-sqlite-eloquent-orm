@@ -21,6 +21,11 @@ describe('castAttribute', () => {
     expect(dateObject.toISOString()).toBe(isoDateString);
   });
 
+  it('should not cast null fields to Date objects', () => {
+    const dateObject = Model.castAttribute('date', null);
+    expect(dateObject).toBeNull();
+  });
+
   it('should handle invalid date strings when casting', () => {
     const invalidDateString = 'not a valid date';
     const result = Model.castAttribute('date', invalidDateString);
