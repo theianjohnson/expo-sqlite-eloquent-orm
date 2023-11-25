@@ -11,7 +11,7 @@ type Clauses = {
     secondKey: string
   }>
   where: Array<{ column: string, operator: string, value?: any }>
-  orderBy: { column: string, direction: string } | null
+  orderBy: Array<{ column: string, direction: string }>
   limit: number | null
   withRelations: string[]
 }
@@ -55,7 +55,7 @@ export class Model {
         select: '*',
         joins: [],
         where: [],
-        orderBy: null,
+        orderBy: [],
         limit: null,
         withRelations: []
       }
@@ -85,6 +85,8 @@ export class Model {
   static async resetDatabase() {
     await this.db.closeAsync();
     await this.db.deleteAsync();
+    // @ts-ignore
+    this.db = null;
     this.db = SQLite.openDatabase('app.db');
   }
 
@@ -277,7 +279,7 @@ export class Model {
   }
 
   orderBy (column: string, direction: 'ASC' | 'DESC' = 'ASC'): this {
-    this.__private.clauses.orderBy = { column, direction }
+    this.__private.clauses.orderBy.push({ column, direction })
     return this
   }
 
@@ -399,8 +401,12 @@ export class Model {
     }
 
     // Add ORDER BY clause if set
-    if (this.__private.clauses.orderBy) {
-      query += ` ORDER BY ${this.clauses.orderBy.column} ${this.clauses.orderBy.direction}`
+    if (this.__private.clauses.orderBy.length > 0) {
+      const orderByClauses = this.__private.clauses.orderBy.map(clause => {
+        return `${clause.column} ${clause.direction}`
+      }).join(', ')
+
+      query += ` ORDER BY ${orderByClauses}`
     }
 
     // Add LIMIT clause if set

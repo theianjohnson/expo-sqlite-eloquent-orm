@@ -85,6 +85,7 @@ export class Model {
   static async resetDatabase() {
     await this.db.closeAsync();
     await this.db.deleteAsync();
+    this.db = null;
     this.db = SQLite.openDatabase('app.db');
   }
 
@@ -215,7 +216,7 @@ export class Model {
       case 'string':
         return String(value);
       case 'date':
-        return new Date(value);
+        return !!value ? new Date(value) : null;
       case 'json':
         try {
           return JSON.parse(value);

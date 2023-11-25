@@ -71,7 +71,7 @@ class Model {
         select: '*',
         joins: [],
         where: [],
-        orderBy: null,
+        orderBy: [],
         limit: null,
         withRelations: []
       }
@@ -96,6 +96,8 @@ class Model {
     return __awaiter(this, void 0, void 0, function* () {
       yield this.db.closeAsync();
       yield this.db.deleteAsync();
+      // @ts-ignore
+      this.db = null;
       this.db = SQLite.openDatabase('app.db');
     });
   }
@@ -281,10 +283,10 @@ class Model {
     return this;
   }
   orderBy(column, direction = 'ASC') {
-    this.__private.clauses.orderBy = {
+    this.__private.clauses.orderBy.push({
       column,
       direction
-    };
+    });
     return this;
   }
   limit(number) {
@@ -389,8 +391,11 @@ class Model {
       query += ` WHERE ${whereClauses}`;
     }
     // Add ORDER BY clause if set
-    if (this.__private.clauses.orderBy) {
-      query += ` ORDER BY ${this.clauses.orderBy.column} ${this.clauses.orderBy.direction}`;
+    if (this.__private.clauses.orderBy.length > 0) {
+      const orderByClauses = this.__private.clauses.orderBy.map(clause => {
+        return `${clause.column} ${clause.direction}`;
+      }).join(', ');
+      query += ` ORDER BY ${orderByClauses}`;
     }
     // Add LIMIT clause if set
     if (this.__private.clauses.limit !== null) {
