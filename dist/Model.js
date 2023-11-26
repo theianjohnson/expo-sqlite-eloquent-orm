@@ -239,8 +239,14 @@ class Model {
       case 'string':
         return String(value);
       case 'date':
+        if (!value) {
+          return null;
+        }
         return value instanceof Date ? value.toISOString().split('T')[0] : new Date(value).toISOString().split('T')[0];
       case 'datetime':
+        if (!value) {
+          return null;
+        }
         return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
       case 'json':
         try {

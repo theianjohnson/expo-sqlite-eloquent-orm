@@ -94,6 +94,7 @@ const seedData = {
     { id: 1, name: 'Birthday Party', startDate: '2024-10-01', notes: 'Bring a gift!' },
     { id: 2, name: 'Wedding', startDate: '2025-01-01', endDate: '2025-01-01' },
     { id: 3, name: 'Graduation', startDate: '2025-05-01', endDate: '2025-05-04' },
+    {id: 4, name: 'Vacation', startDate: ''},
   ],
   groups: [
     { id: 1, name: 'Family' },
@@ -185,7 +186,7 @@ export default function App() {
     <View style={styles.container}>
       <Text>Events:</Text>
       {!!events.length && events.map(event => (
-        <Text key={event.id}>{event.name} - {Intl.DateTimeFormat(undefined).format(event.startDate)} {!!event.endDate ? `to ${Intl.DateTimeFormat(undefined).format(event.endDate)}` : ''}</Text>
+        <Text key={event.id}>{event.name} - {!!event.startDate ? Intl.DateTimeFormat(undefined).format(event.startDate) : 'No start date'} {!!event.endDate ? `to ${Intl.DateTimeFormat(undefined).format(event.endDate)}` : ''}</Text>
       ))}
 
       <View style={{ height: 10 }} />
