@@ -29,9 +29,25 @@ describe('castAttribute', () => {
   it('should handle invalid date strings when casting', () => {
     const invalidDateString = 'not a valid date';
     const result = Model.castAttribute('date', invalidDateString);
-    // Depending on how you want to handle invalid dates, 
-    // you can expect either a null, an invalid Date object, or the original string
-    // For example, expecting an invalid Date object:
+    expect(result).toBeInstanceOf(Date);
+    expect(isNaN(result.getTime())).toBe(true); // Invalid Date object check
+  });
+
+  it('should cast datetime strings to Date objects', () => {
+    const isoDateTimeString = '2020-01-01T12:30:45.000Z';
+    const dateTimeObject = Model.castAttribute('datetime', isoDateTimeString);
+    expect(dateTimeObject).toBeInstanceOf(Date);
+    expect(dateTimeObject.toISOString()).toBe(isoDateTimeString);
+  });
+
+  it('should not cast null fields to datetime objects', () => {
+    const dateTimeObject = Model.castAttribute('datetime', null);
+    expect(dateTimeObject).toBeNull();
+  });
+
+  it('should handle invalid datetime strings when casting', () => {
+    const invalidDateTimeString = 'not a valid datetime';
+    const result = Model.castAttribute('datetime', invalidDateTimeString);
     expect(result).toBeInstanceOf(Date);
     expect(isNaN(result.getTime())).toBe(true); // Invalid Date object check
   });

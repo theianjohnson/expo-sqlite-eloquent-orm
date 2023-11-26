@@ -1,5 +1,5 @@
 type Casts = {
-    [key: string]: 'number' | 'boolean' | 'string' | 'date' | 'json';
+    [key: string]: 'number' | 'boolean' | 'string' | 'date' | 'datetime' | 'json';
 };
 type ModelAttributes = Record<string, any>;
 type SQLResult = {

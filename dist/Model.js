@@ -216,6 +216,8 @@ class Model {
         return String(value);
       case 'date':
         return !!value ? new Date(value) : null;
+      case 'datetime':
+        return !!value ? new Date(value) : null;
       case 'json':
         try {
           return JSON.parse(value);
@@ -237,7 +239,9 @@ class Model {
       case 'string':
         return String(value);
       case 'date':
-        return value instanceof Date ? value.toISOString() : value;
+        return value instanceof Date ? value.toISOString().split('T')[0] : new Date(value).toISOString().split('T')[0];
+      case 'datetime':
+        return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
       case 'json':
         try {
           return JSON.stringify(value);
@@ -539,8 +543,8 @@ exports.Model = Model;
 Model.db = SQLite.openDatabase('app.db');
 Model.tableName = '';
 Model.casts = {
-  createdAt: 'date',
-  updatedAt: 'date'
+  createdAt: 'datetime',
+  updatedAt: 'datetime'
 };
 Model.withTimestamps = true;
 Model.createdAtColumn = 'createdAt';
