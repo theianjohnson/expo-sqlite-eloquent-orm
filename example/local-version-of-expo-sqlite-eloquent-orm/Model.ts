@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite'
 
-type Casts = {[key: string]: 'number' | 'boolean' | 'string' | 'date' | 'json'}
+type Casts = {[key: string]: 'number' | 'boolean' | 'string' | 'date' | 'datetime' | 'json'}
 
 type Clauses = {
   select: string
@@ -11,7 +11,7 @@ type Clauses = {
     secondKey: string
   }>
   where: Array<{ column: string, operator: string, value?: any }>
-  orderBy: { column: string, direction: string } | null
+  orderBy: Array<{ column: string, direction: string }>
   limit: number | null
   withRelations: string[]
 }
@@ -34,8 +34,8 @@ export class Model {
   static tableName = ''
 
   static casts: Casts = {
-    createdAt: 'date',
-    updatedAt: 'date',
+    createdAt: 'datetime',
+    updatedAt: 'datetime',
   }
 
   static withTimestamps: boolean = true;
@@ -55,7 +55,7 @@ export class Model {
         select: '*',
         joins: [],
         where: [],
-        orderBy: null,
+        orderBy: [],
         limit: null,
         withRelations: []
       }
@@ -85,6 +85,7 @@ export class Model {
   static async resetDatabase() {
     await this.db.closeAsync();
     await this.db.deleteAsync();
+    // @ts-ignore
     this.db = null;
     this.db = SQLite.openDatabase('app.db');
   }
@@ -216,6 +217,8 @@ export class Model {
       case 'string':
         return String(value);
       case 'date':
+        return !!value ? new Date((new Date(value).toISOString()).replace('Z', '')) : null;
+      case 'datetime':
         return !!value ? new Date(value) : null;
       case 'json':
         try {
@@ -240,7 +243,9 @@ export class Model {
       case 'string':
         return String(value);
       case 'date':
-        return value instanceof Date ? value.toISOString() : value;
+        return value instanceof Date ? value.toISOString().split('T')[0] : (new Date(value)).toISOString().split('T')[0];
+      case 'datetime':
+        return value instanceof Date ? value.toISOString() : (new Date(value)).toISOString();
       case 'json':
         try {
           return JSON.stringify(value);
@@ -278,7 +283,7 @@ export class Model {
   }
 
   orderBy (column: string, direction: 'ASC' | 'DESC' = 'ASC'): this {
-    this.__private.clauses.orderBy = { column, direction }
+    this.__private.clauses.orderBy.push({ column, direction })
     return this
   }
 
@@ -400,8 +405,12 @@ export class Model {
     }
 
     // Add ORDER BY clause if set
-    if (this.__private.clauses.orderBy) {
-      query += ` ORDER BY ${this.clauses.orderBy.column} ${this.clauses.orderBy.direction}`
+    if (this.__private.clauses.orderBy.length > 0) {
+      const orderByClauses = this.__private.clauses.orderBy.map(clause => {
+        return `${clause.column} ${clause.direction}`
+      }).join(', ')
+
+      query += ` ORDER BY ${orderByClauses}`
     }
 
     // Add LIMIT clause if set

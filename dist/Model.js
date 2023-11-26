@@ -215,7 +215,7 @@ class Model {
       case 'string':
         return String(value);
       case 'date':
-        return !!value ? new Date(value) : null;
+        return !!value ? new Date(new Date(value).toISOString().replace('Z', '')) : null;
       case 'datetime':
         return !!value ? new Date(value) : null;
       case 'json':

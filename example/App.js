@@ -4,6 +4,13 @@ import { Button, StyleSheet, Text, View } from 'react-native';
 import { Model, Migration } from './local-version-of-expo-sqlite-eloquent-orm';
 
 // Define some models
+class Event extends Model {
+  static casts = {
+    startDate: 'date',
+    endDate: 'date',
+  };
+}
+
 class Group extends Model {
   static withTimestamps = false;
 
@@ -37,6 +44,17 @@ class Person extends Model {
 
 // Define migrations
 const migrations = {
+  '1699142746_init_events': `
+    CREATE TABLE IF NOT EXISTS events (
+      id INTEGER PRIMARY KEY NOT NULL,
+      createdAt DATETIME NOT NULL,
+      updatedAt DATETIME NOT NULL,
+      name TEXT,
+      startDate DATE,
+      endDate DATE,
+      notes TEXT
+    );
+  `,
   '1699142747_init_groups': `
     CREATE TABLE IF NOT EXISTS groups (
       id INTEGER PRIMARY KEY NOT NULL,
@@ -72,6 +90,11 @@ const migrations = {
 
 // Seed data
 const seedData = {
+  events: [
+    { id: 1, name: 'Birthday Party', startDate: '2024-10-01', notes: 'Bring a gift!' },
+    { id: 2, name: 'Wedding', startDate: '2025-01-01', endDate: '2025-01-01' },
+    { id: 3, name: 'Graduation', startDate: '2025-05-01', endDate: '2025-05-04' },
+  ],
   groups: [
     { id: 1, name: 'Family' },
     { id: 2, name: 'Friends' },
@@ -99,7 +122,7 @@ const seedData = {
 
 export default function App() {
 
-  // const [groups, setGroups] = useState([]);
+  const [events, setEvents] = useState([]);
   const [location, setLocation] = useState(null);
   const [locations, setLocations] = useState([]);
   const [people, setPeople] = useState([]);
@@ -120,6 +143,9 @@ export default function App() {
   // Run whenever we trigger rerender so we can see what deleting and recreating the database does
   useEffect(() => {
     (async() => {
+      const events = await Event.get();
+      setEvents(events);
+
       const location = await Location.with('people').find(1);
       setLocation(location);
 
@@ -144,6 +170,7 @@ export default function App() {
   }
 
   const seedDatabase = async () => {
+    await Event.seed(seedData.events);
     await Group.seed(seedData.groups);
     await Location.seed(seedData.locations);
     await Person.seed(seedData.people);
@@ -156,6 +183,13 @@ export default function App() {
 
   return (
     <View style={styles.container}>
+      <Text>Events:</Text>
+      {!!events.length && events.map(event => (
+        <Text key={event.id}>{event.name} - {Intl.DateTimeFormat(undefined).format(event.startDate)} {!!event.endDate ? `to ${Intl.DateTimeFormat(undefined).format(event.endDate)}` : ''}</Text>
+      ))}
+
+      <View style={{ height: 10 }} />
+
       <Text>Location:</Text>
       {!!location && (
         <Text>{location.name} - {!!location?.people?.length && location.people.map(person => person.name).join(', ')}</Text>
