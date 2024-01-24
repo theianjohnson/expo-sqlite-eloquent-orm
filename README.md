@@ -264,9 +264,13 @@ const postUser = await post.user;
 ````
 
 ## To Do
+[] Fix where('column', null) to accept actual null and just string 'null'
 [] Fix Typescript errors when defining models, ie "Class static side 'typeof Person' incorrectly extends base class static side 'typeof Model'."
 [] Many to many attach/detach methods
 [] Update .with() to accept an array of relationships
+[] Add .from() that proxies to .table()?
+[] Update .table() to accept an array of relationships (for joins)
+[] Add .query() for raw query with params
 [] Add .create() that returns the created model (https://laravel.com/docs/10.x/eloquent#inserts)
 [] whereRaw
 [] Bulk eager loading, currently eager loading is n+1
