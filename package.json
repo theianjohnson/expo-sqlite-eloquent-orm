@@ -1,6 +1,6 @@
 {
   "name": "expo-sqlite-eloquent-orm",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "An Expo SQLite ORM",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -40,6 +40,6 @@
   "peerDependencies": {
     "expo-sqlite": "~13.2.1",
     "react": "^18.2.0",
-    "react-native": "^0.72.6"
+    "react-native": "^0.73.2"
   }
 }
