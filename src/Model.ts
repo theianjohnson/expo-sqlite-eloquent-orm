@@ -217,7 +217,7 @@ export class Model {
       case 'string':
         return String(value);
       case 'date':
-        return !!value ? new Date((new Date(value).toISOString()).replace('Z', '')) : null;
+        return !!value ? new Date(`${value}T00:00:00`) : null;
       case 'datetime':
         return !!value ? new Date(value) : null;
       case 'json':
@@ -246,7 +246,16 @@ export class Model {
         if(!value) {
           return null;
         }
-        return value instanceof Date ? value.toISOString().split('T')[0] : (new Date(value)).toISOString().split('T')[0];
+
+        if (!(value instanceof Date)) {
+          value = new Date(value);
+        }
+      
+        const year = value.getFullYear();
+        const month = (value.getMonth() + 1).toString().padStart(2, '0');
+        const day = value.getDate().toString().padStart(2, '0');
+        
+        return `${year}-${month}-${day}`;
       case 'datetime':
         if(!value) {
           return null;
