@@ -29,7 +29,7 @@ type SQLResult = {
 }
 
 export class Model {
-  private static db = SQLite.openDatabase('app.db')
+  private static db = this.openDatabase();
   
   static tableName = ''
 
@@ -67,7 +67,7 @@ export class Model {
         if (typeof prop === 'string') {
           if (
             typeof target[prop as keyof Model] === 'function' &&
-            !['resetDatabase', 'reloadDatabase', 'table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) &&
+            !['resetDatabase', 'openDatabase', 'table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) &&
             !target.__private.clauses?.withRelations.includes(prop)
           ) {
             const relationMethods = target.getRelationMethods();
@@ -85,12 +85,12 @@ export class Model {
   static async resetDatabase() {
     await this.db.closeAsync();
     await this.db.deleteAsync();
-
-    this.reloadDatabase();
+    this.db = null;
+    this.db = this.openDatabase();
   }
 
-  static reloadDatabase() {
-    this.db = SQLite.openDatabase('app.db');
+  static openDatabase() {
+    return SQLite.openDatabase('app.db');
   }
 
   getRelationMethods(): string[] {
