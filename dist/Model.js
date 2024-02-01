@@ -81,7 +81,7 @@ class Model {
         var _a;
         // console.log('Proxy get()', prop, target.__private.clauses?.withRelations);
         if (typeof prop === 'string') {
-          if (typeof target[prop] === 'function' && !['resetDatabase', 'table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) && !((_a = target.__private.clauses) === null || _a === void 0 ? void 0 : _a.withRelations.includes(prop))) {
+          if (typeof target[prop] === 'function' && !['resetDatabase', 'reloadDatabase', 'table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) && !((_a = target.__private.clauses) === null || _a === void 0 ? void 0 : _a.withRelations.includes(prop))) {
             const relationMethods = target.getRelationMethods();
             if (relationMethods.includes(prop)) {
               return undefined;
@@ -96,10 +96,11 @@ class Model {
     return __awaiter(this, void 0, void 0, function* () {
       yield this.db.closeAsync();
       yield this.db.deleteAsync();
-      // @ts-ignore
-      this.db = null;
-      this.db = SQLite.openDatabase('app.db');
+      this.reloadDatabase();
     });
+  }
+  static reloadDatabase() {
+    this.db = SQLite.openDatabase('app.db');
   }
   getRelationMethods() {
     const proto = Object.getPrototypeOf(this);
@@ -215,7 +216,7 @@ class Model {
       case 'string':
         return String(value);
       case 'date':
-        return !!value ? new Date(new Date(value).toISOString().replace('Z', '')) : null;
+        return !!value ? new Date(`${value}T00:00:00`) : null;
       case 'datetime':
         return !!value ? new Date(value) : null;
       case 'json':
@@ -242,7 +243,13 @@ class Model {
         if (!value) {
           return null;
         }
-        return value instanceof Date ? value.toISOString().split('T')[0] : new Date(value).toISOString().split('T')[0];
+        if (!(value instanceof Date)) {
+          value = new Date(value);
+        }
+        const year = value.getFullYear();
+        const month = (value.getMonth() + 1).toString().padStart(2, '0');
+        const day = value.getDate().toString().padStart(2, '0');
+        return `${year}-${month}-${day}`;
       case 'datetime':
         if (!value) {
           return null;

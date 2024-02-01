@@ -67,7 +67,7 @@ export class Model {
         if (typeof prop === 'string') {
           if (
             typeof target[prop as keyof Model] === 'function' &&
-            !['resetDatabase', 'table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) &&
+            !['resetDatabase', 'reloadDatabase', 'table', 'select', 'join', 'where', 'orderBy', 'limit', 'with', 'get', 'insert', 'update', 'delete', 'find', 'first', 'seed', 'getSql', 'cleanObject'].includes(prop) &&
             !target.__private.clauses?.withRelations.includes(prop)
           ) {
             const relationMethods = target.getRelationMethods();
@@ -85,8 +85,11 @@ export class Model {
   static async resetDatabase() {
     await this.db.closeAsync();
     await this.db.deleteAsync();
-    // @ts-ignore
-    this.db = null;
+
+    this.reloadDatabase();
+  }
+
+  static reloadDatabase() {
     this.db = SQLite.openDatabase('app.db');
   }
 

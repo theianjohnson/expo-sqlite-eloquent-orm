@@ -22,6 +22,7 @@ export declare class Model {
     [key: string]: any;
     constructor(attributes?: ModelAttributes);
     static resetDatabase(): Promise<void>;
+    static reloadDatabase(): void;
     getRelationMethods(): string[];
     static table<T extends Model>(this: new () => T, name: string): T;
     static select<T extends Model>(this: new () => T, fields?: string | string[]): T;
