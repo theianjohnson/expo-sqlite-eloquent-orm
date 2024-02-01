@@ -85,6 +85,7 @@ export class Model {
   static async resetDatabase() {
     await this.db.closeAsync();
     await this.db.deleteAsync();
+    // @ts-ignore
     this.db = null;
     this.db = this.openDatabase();
   }
